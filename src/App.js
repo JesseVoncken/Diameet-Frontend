@@ -6,8 +6,11 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import DateSeparator from './components/DateSeparator';
 
+
 // Replace http://localhost:4000 with your actual Render URL
 const socket = io('https://diameet-backend.onrender.com');
+
+const API_BASE_URL = 'https://diameet-backend.onrender.com';
 
 const EMOJI_LIBRARY = [
   { label: 'Recently Used', emojis: ['😊', '😂', '🤣', '❤️', '👍', '🙏', '🔥', '✨'] },
@@ -83,13 +86,15 @@ function App() {
   }, [isResizing]);
 
   // --- 4. DATA FETCHING & SOCKETS ---
-  useEffect(() => {
-    if (!user) return;
-    fetch('http://localhost:4000/api/users')
-      .then(res => res.json())
-      .then(data => setUsersList(data.filter(u => u.username !== user)))
-      .catch(err => console.error("Error fetching users:", err));
-  }, [user]);
+useEffect(() => {
+  if (!user) return;
+  
+  // Use the new Render URL here
+  fetch(`${API_BASE_URL}/api/users`)
+    .then(res => res.json())
+    .then(data => setUsersList(data.filter(u => u.username !== user)))
+    .catch(err => console.error("Error fetching users:", err));
+}, [user]);
 
   useEffect(() => {
     if (!user) return;
