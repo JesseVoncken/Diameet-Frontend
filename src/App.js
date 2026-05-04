@@ -6,7 +6,8 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import DateSeparator from './components/DateSeparator';
 
-const socket = io('http://localhost:4000');
+// Replace http://localhost:4000 with your actual Render URL
+const socket = io('https://diameet-backend.onrender.com');
 
 const EMOJI_LIBRARY = [
   { label: 'Recently Used', emojis: ['😊', '😂', '🤣', '❤️', '👍', '🙏', '🔥', '✨'] },
