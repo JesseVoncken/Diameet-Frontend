@@ -27,18 +27,48 @@ function Auth({ onLoginSuccess }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // --- UPDATED IMAGE UPLOAD WITH CANVAS RESIZING AND COMPRESSION ---
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Afbeelding is te groot. Maximaal 5MB toegestaan.');
-      return;
-    }
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData({ ...formData, avatar: reader.result });
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        
+        // Define clean, small avatar bounds
+        const MAX_WIDTH = 120;
+        const MAX_HEIGHT = 120;
+        let width = img.width;
+        let height = img.height;
+
+        // Maintain strict image aspect ratio limits
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to optimized JPEG format string at 70% quality factor
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        setFormData({ ...formData, avatar: compressedBase64 });
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -93,14 +123,11 @@ function Auth({ onLoginSuccess }) {
         alert(`Account aangemaakt! Welkom bij DiaMEET, ${formData.username}! Je kunt nu inloggen.`);
         setIsRegistering(false);
         setStep(1); 
-        // Clear state for login
         setFormData({ username: '', password: '', avatar: '', role: '', interests: [] });
       } else {
-        // SUCCESSFUL LOGIN: Save everything to LocalStorage!
         localStorage.setItem('diameet_token', data.token);
         localStorage.setItem('diameet_user', data.username);
         
-        // Critically store these so App.js knows your customization options instantly
         if (data.avatar) localStorage.setItem('diameet_avatar', data.avatar);
         if (data.role) localStorage.setItem('diameet_role', data.role);
         
@@ -115,7 +142,6 @@ function Auth({ onLoginSuccess }) {
     <div style={styles.container}>
       <div style={styles.formCard}>
         
-        {/* LOGIN MODE */}
         {!isRegistering ? (
           <form onSubmit={handleSubmit} style={styles.verticalFlow}>
             <h2 style={styles.heading}>Welkom terug!</h2>
@@ -129,8 +155,6 @@ function Auth({ onLoginSuccess }) {
             <p style={styles.toggleText} onClick={() => { setIsRegistering(true); setError(''); }}>Nieuw hier? Registreer je account →</p>
           </form>
         ) : (
-          
-          /* REGISTER STORYTELLING MODE */
           <div style={styles.verticalFlow}>
             <div style={styles.progressTrack}>
               <div style={{ ...styles.progressBar, width: `${(step / 4) * 100}%` }}></div>
@@ -139,7 +163,6 @@ function Auth({ onLoginSuccess }) {
             <h2 style={styles.heading}>Account Aanmaken</h2>
             {error && <div style={styles.errorBox}>{error}</div>}
 
-            {/* STEP 1: CREDENTIALS */}
             {step === 1 && (
               <form onSubmit={handleNextStep} style={styles.verticalFlow}>
                 <p style={styles.subheading}>Kies een unieke gebruikersnaam en een sterk wachtwoord.</p>
@@ -149,7 +172,6 @@ function Auth({ onLoginSuccess }) {
               </form>
             )}
 
-            {/* STEP 2: AVATAR UPLOAD */}
             {step === 2 && (
               <div style={styles.verticalFlow}>
                 <p style={styles.subheading}>Upload een profielfoto om je profiel compleet te maken:</p>
@@ -171,7 +193,6 @@ function Auth({ onLoginSuccess }) {
               </div>
             )}
 
-            {/* STEP 3: ROLE SELECT */}
             {step === 3 && (
               <div style={styles.verticalFlow}>
                 <p style={styles.subheading}>Wat is jouw rol binnen dit platform?</p>
@@ -198,7 +219,6 @@ function Auth({ onLoginSuccess }) {
               </div>
             )}
 
-            {/* STEP 4: INTEREST TAGS */}
             {step === 4 && (
               <div style={styles.verticalFlow}>
                 <p style={styles.subheading}>Selecteer optioneel een aantal onderwerpen die je interesseren:</p>
