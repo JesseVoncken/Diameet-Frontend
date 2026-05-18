@@ -237,6 +237,7 @@ function App() {
     if (index === 0) showSeparator = true;
     else if (currentDate !== new Date(groupedMessages[index - 1].timestamp).toDateString()) showSeparator = true;
 
+<<<<<<< HEAD
     return (
       <React.Fragment key={index}>
         {showSeparator && <DateSeparator label={label} />}
@@ -255,6 +256,33 @@ function App() {
   })}
   <div ref={messagesEndRef} />
 </div>
+=======
+              return (
+                <React.Fragment key={index}>
+                  {showSeparator && <DateSeparator label={label} />}
+                  
+                  {/* Styled message card layout matching reference template */}
+                  <div style={styles.messageContainerRow}>
+                    <img src={group.avatar} alt="PFP" style={styles.chatAvatar} />
+                    
+                    <div style={styles.messageContentBlock}>
+                      <div style={styles.headerInfoLine}>
+                        <span style={styles.chatUsernameText}>{group.user}</span>
+                        <span style={styles.badgeLabelStyle}>{group.role}</span>
+                        <span style={styles.chatTimeText}>
+                          {dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      <Message user={group.user} texts={group.texts} isOwnMessage={group.user === user} />
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+>>>>>>> origin/main
 
           <div style={styles.inputBar}>
             {showEmojiPicker && (
