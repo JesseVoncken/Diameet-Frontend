@@ -24,6 +24,10 @@ function Auth({ onLoginSuccess }) {
 
   const interestTags = ['#Type1', '#Type2', '#Pomp', '#Pen', '#CGM', '#FGM', '#Voeding', '#Sport'];
 
+  // --- CONFIGURATION ---
+  // Replace this with your actual Render URL if it's different
+  const API_BASE_URL = 'https://diameet-backend.onrender.com';
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -96,11 +100,16 @@ function Auth({ onLoginSuccess }) {
         setIsRegistering(false);
         setStep(1); 
       } else {
+<<<<<<< HEAD
+=======
+        // Save the Token and Username to LocalStorage for persistence
+>>>>>>> origin/main
         localStorage.setItem('diameet_token', data.token);
         localStorage.setItem('diameet_user', data.username);
         onLoginSuccess(data.username);
       }
     } catch (err) {
+      console.error("Auth Error:", err);
       setError(err.message);
     }
   };
@@ -109,6 +118,7 @@ function Auth({ onLoginSuccess }) {
     <div style={styles.container}>
       <div style={styles.formCard}>
         
+<<<<<<< HEAD
         {/* LOGIN MODE */}
         {!isRegistering ? (
           <form onSubmit={handleSubmit} style={styles.verticalFlow}>
@@ -132,6 +142,36 @@ function Auth({ onLoginSuccess }) {
 
             <h2 style={styles.heading}>Account Aanmaken</h2>
             {error && <div style={styles.errorBox}>{error}</div>}
+=======
+        {error && (
+          <div style={styles.errorBox}>
+            {error}
+          </div>
+        )}
+
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>USERNAME</label>
+          <input
+            name="username"
+            placeholder="Enter username"
+            style={styles.input}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>PASSWORD</label>
+          <input
+            name="password"
+            type="password"
+            placeholder="Enter password"
+            style={styles.input}
+            onChange={handleChange}
+            required
+          />
+        </div>
+>>>>>>> origin/main
 
             {/* STEP 1: CREDENTIALS */}
             {step === 1 && (
@@ -222,6 +262,7 @@ function Auth({ onLoginSuccess }) {
 }
 
 const styles = {
+<<<<<<< HEAD
   container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#313338', fontFamily: 'sans-serif', padding: '20px' },
   formCard: { background: '#2b2d31', padding: '30px', borderRadius: '12px', width: '360px', color: 'white', boxShadow: '0 12px 24px rgba(0,0,0,0.3)' },
   verticalFlow: { display: 'flex', flexDirection: 'column', gap: '18px' },
@@ -246,6 +287,70 @@ const styles = {
   discordRoleCard: { padding: '14px', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px', transition: 'all 0.2s' },
   tagWrapContainer: { display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' },
   badge: { padding: '8px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', userSelect: 'none', transition: 'all 0.15s' }
+=======
+  container: { 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh', 
+    background: '#313338' 
+  },
+  form: { 
+    background: '#2b2d31', 
+    padding: '30px', 
+    borderRadius: '8px', 
+    width: '320px', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '20px', 
+    color: 'white',
+    boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  label: {
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#b5bac1'
+  },
+  input: { 
+    padding: '10px', 
+    borderRadius: '4px', 
+    border: 'none', 
+    background: '#1e1f22', 
+    color: 'white',
+    outline: 'none'
+  },
+  button: { 
+    padding: '12px', 
+    borderRadius: '4px', 
+    border: 'none', 
+    background: '#5865f2', 
+    color: 'white', 
+    cursor: 'pointer', 
+    fontWeight: 'bold',
+    transition: 'background 0.2s',
+    marginTop: '10px'
+  },
+  toggleText: { 
+    fontSize: '13px', 
+    color: '#00a8fc', 
+    textAlign: 'left', 
+    cursor: 'pointer', 
+    marginTop: '5px' 
+  },
+  errorBox: {
+    background: '#f23f4222',
+    color: '#fa777a',
+    padding: '10px',
+    borderRadius: '4px',
+    fontSize: '14px',
+    border: '1px solid #f23f43'
+  }
+>>>>>>> origin/main
 };
 
 export default Auth;
