@@ -140,6 +140,26 @@ function Auth({ onLoginSuccess }) {
 
   return (
     <div style={styles.container}>
+      {/* Decorative background SVG placed behind the card */}
+      <svg
+        viewBox="0 0 1877 838"
+        preserveAspectRatio="xMidYMid slice"
+        style={{
+          position: 'absolute',
+          top: '-8%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '140%',
+          height: 'auto',
+          zIndex: 0,
+          opacity: 0.12,
+          pointerEvents: 'none'
+        }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M1851 834.633C1851 834.633 1828.39 641.088 1784.92 525.577C1706.57 317.367 1404.36 581.534 1233.5 439.133C1125.38 349.026 1223.5 141.133 1074 53.1334C898.379 -50.2425 896.896 173.884 701 117.633C401.5 31.6333 467.085 216.517 401.5 406.133C335.915 595.75 341.094 627.987 232 707.633C136.559 777.312 85 821.133 -60.5 785.133" stroke="#FF9B39" strokeWidth="51" fill="none"/>
+      </svg>
+
       <div style={styles.formCard}>
         
         {!isRegistering ? (
@@ -268,21 +288,24 @@ const styles = {
     display: 'flex', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    minHeight: '100%', 
-    background: 'linear-gradient(135deg, #FFFFFF 20%, #FFF3E0 100%)', 
+    position: 'relative',
+    minHeight: '100vh', 
+    background: '#FFEBD7', 
     fontFamily: 'sans-serif', 
     padding: '20px' 
   },
   
   // Clean, modern glass-morphism style card container
   formCard: { 
-    background: '#FFFFFF', 
+    background: '#FC850F', 
     padding: '35px 30px', 
     borderRadius: '16px', 
     width: '360px', 
     color: '#1A202C', 
     boxShadow: '0 10px 30px rgba(255, 120, 23, 0.08), 0 1px 3px rgba(0,0,0,0.02)',
-    border: '1px solid #E2E8F0'
+    border: '1px solid #E2E8F0',
+    position: 'relative',
+    zIndex: 1
   },
   
   verticalFlow: { display: 'flex', flexDirection: 'column', gap: '18px' },

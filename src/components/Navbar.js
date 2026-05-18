@@ -32,12 +32,6 @@ function Navbar({ user, onLogout, onDeleteAccount }) {
           <span style={styles.logoIcon}>&#8605;</span>
         </div>
         <h1 style={styles.brandName}>Dia<span style={{fontWeight: '900'}}>MEET</span></h1>
-        
-        <nav style={styles.navLinks}>
-          <div style={styles.activeLink}>
-            <span style={styles.navIcon}>&#128101;</span> Community
-          </div>
-        </nav>
       </div>
 
       <div style={styles.rightSection}>
