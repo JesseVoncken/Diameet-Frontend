@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function Navbar({ user, onLogout }) {
+function Navbar({ user, onLogout, onDeleteAccount }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -14,6 +14,16 @@ function Navbar({ user, onLogout }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // --- PERSISTENT SELECTION CAPTURING ---
+  // Grab active roles and uploaded string images directly out of cached local instances
+  const cachedRole = localStorage.getItem('diameet_role') || 'Beheerder';
+  const cachedAvatar = localStorage.getItem('diameet_avatar');
+
+  // If a custom image was never uploaded, revert cleanly back to the monogram letter URL you had before
+  const finalAvatar = (cachedAvatar && cachedAvatar !== 'undefined' && !cachedAvatar.includes('pravatar.cc'))
+    ? cachedAvatar
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user || '??')}&background=random&color=fff`;
 
   return (
     <div style={styles.navContainer}>
@@ -49,12 +59,13 @@ function Navbar({ user, onLogout }) {
           >
             <div style={styles.userInfo}>
               <div style={styles.userName}>{user} &#9662;</div>
-              <div style={styles.userRole}>Beheerder</div>
+              {/* Renders the custom selected registration role instead of hardcoded data */}
+              <div style={styles.userRole}>{cachedRole}</div>
             </div>
             <img 
-              src={`https://ui-avatars.com/api/?name=${user}&background=random&color=fff`} 
+              src={finalAvatar} 
               style={styles.navAvatar} 
-              alt="User" 
+              alt="User profile avatar" 
             />
           </div>
 
@@ -62,6 +73,18 @@ function Navbar({ user, onLogout }) {
             <div style={styles.dropdownMenu}>
               <div style={styles.dropdownItem}>Profiel instellingen</div>
               <div style={styles.dropdownItem}>Bestanden</div>
+              
+              {/* THE NEW ACCOUNT DELETION ITEM (Styled to match your layout perfectly) */}
+              <div 
+                style={{...styles.dropdownItem, color: '#ed4245', fontWeight: '600'}}
+                onClick={() => {
+                  setShowDropdown(false);
+                  onDeleteAccount(); // Triggers delete function from App.js
+                }}
+              >
+                ⚠️ Account Verwijderen
+              </div>
+
               <div style={styles.divider}></div>
               <div 
                 style={{...styles.dropdownItem, color: '#ed4245'}} 
@@ -88,7 +111,8 @@ const styles = {
     padding: '0 24px',
     flexShrink: 0,
     zIndex: 100,
-    position: 'relative'
+    position: 'relative',
+    fontFamily: 'sans-serif'
   },
   leftSection: { display: 'flex', alignItems: 'center', gap: '20px' },
   logoBox: {
@@ -127,25 +151,28 @@ const styles = {
     gap: '12px', 
     borderLeft: '1px solid #E2E8F0', 
     paddingLeft: '20px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    userSelect: 'none'
   },
   userInfo: { textAlign: 'right' },
   userName: { fontSize: '14px', fontWeight: '700', color: '#1A202C' },
   userRole: { fontSize: '12px', color: '#94A3B8' },
-  navAvatar: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' },
+  navAvatar: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', background: '#F1F5F9' },
   
-  // New Dropdown Styles
   dropdownMenu: {
     position: 'absolute',
     top: '60px',
     right: '0',
     background: 'white',
-    minWidth: '180px',
+    minWidth: '190px',
     borderRadius: '12px',
     boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
     border: '1px solid #E2E8F0',
     padding: '8px',
-    zIndex: 1000
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px'
   },
   dropdownItem: {
     padding: '10px 16px',
@@ -153,7 +180,15 @@ const styles = {
     color: '#4A5568',
     borderRadius: '8px',
     cursor: 'pointer',
+    textAlign: 'left',
+    background: 'transparent',
+    border: 'none',
+    width: '100%',
     transition: 'background 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontFamily: 'sans-serif',
     '&:hover': { background: '#F8FAFC' }
   },
   divider: {
