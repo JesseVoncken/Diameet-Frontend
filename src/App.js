@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import DateSeparator from './components/DateSeparator';
 
-// Replace http://localhost:4000 with your actual Render URL
+// Replace with your actual Render URL
 const socket = io('https://diameet-backend.onrender.com');
 
 const API_BASE_URL = 'https://diameet-backend.onrender.com';
@@ -122,7 +122,6 @@ function App() {
     if (command === '/clear') { setMessages([]); setInputText(''); return; }
     if (command === '/clear perm') { socket.emit('clear-channel-perm', currentChannel); setInputText(''); return; }
 
-    // Fetch details stored locally during our new Auth registration wizard
     const currentAvatar = localStorage.getItem('diameet_avatar') || 'https://i.pravatar.cc/150';
     const currentRole = localStorage.getItem('diameet_role') || '🩸 Diabeet';
 
@@ -163,7 +162,7 @@ function App() {
     e.target.value = ''; 
   };
 
-  // --- 6. RENDER REDUCER WITH AVATAR & BADGES ---
+  // --- 6. DATA GROUPING FOR CLEAN LIST VIEW ---
   const groupedMessages = messages.reduce((acc, current) => {
     const lastGroup = acc[acc.length - 1];
     const currentTs = current.timestamp ? new Date(current.timestamp) : new Date();
@@ -179,8 +178,8 @@ function App() {
     } else {
       acc.push({ 
         user: current.user, 
-        avatar: current.avatar || 'https://i.pravatar.cc/150', // Pulls avatar
-        role: current.role || '🩸 Diabeet',                 // Pulls localized badge
+        avatar: current.avatar || 'https://i.pravatar.cc/150',
+        role: current.role || '🩸 Diabeet',
         texts: [entry], 
         timestamp: currentTs 
       });
@@ -227,34 +226,34 @@ function App() {
           </div>
 
           <div style={styles.messageList}>
-  {groupedMessages.map((group, index) => {
-    const dateObj = new Date(group.timestamp);
-    const today = new Date().toDateString();
-    const currentDate = dateObj.toDateString();
-    let showSeparator = false;
-    let label = currentDate === today ? "VANDAAG" : currentDate;
+            {groupedMessages.map((group, index) => {
+              const dateObj = new Date(group.timestamp);
+              const today = new Date().toDateString();
+              const currentDate = dateObj.toDateString();
+              let showSeparator = false;
+              let label = currentDate === today ? "VANDAAG" : currentDate;
 
-    if (index === 0) showSeparator = true;
-    else if (currentDate !== new Date(groupedMessages[index - 1].timestamp).toDateString()) showSeparator = true;
+              if (index === 0) showSeparator = true;
+              else if (currentDate !== new Date(groupedMessages[index - 1].timestamp).toDateString()) showSeparator = true;
 
-    return (
-      <React.Fragment key={index}>
-        {showSeparator && <DateSeparator label={label} />}
-        
-        {/* We strip out the broken HTML rows here and pass data straight to the component */}
-        <Message 
-          user={group.user} 
-          avatar={group.avatar} // Pass the uploaded avatar down
-          role={group.role}     // Pass the role badge down
-          timestamp={dateObj}   // Pass timestamp down
-          texts={group.texts} 
-          isOwnMessage={group.user === user} 
-        />
-      </React.Fragment>
-    );
-  })}
-  <div ref={messagesEndRef} />
-</div>
+              return (
+                <React.Fragment key={index}>
+                  {showSeparator && <DateSeparator label={label} />}
+                  
+                  {/* Clean delegation: Hand everything directly over to Message component properties */}
+                  <Message 
+                    user={group.user} 
+                    avatar={group.avatar}
+                    role={group.role}
+                    timestamp={dateObj}
+                    texts={group.texts} 
+                    isOwnMessage={group.user === user} 
+                  />
+                </React.Fragment>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
 
           <div style={styles.inputBar}>
             {showEmojiPicker && (
@@ -319,7 +318,7 @@ function App() {
   );
 }
 
-// --- 7. STYLES WITH INCORPORATED CHAT WRAPPERS ---
+// --- 7. STYLES ---
 const styles = {
   mainWrapper: { display: 'flex', flexDirection: 'column', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FDFDFE', fontFamily: 'sans-serif' },
   appContainer: { display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 },
@@ -338,28 +337,7 @@ const styles = {
   inputContainer: { display: 'flex', alignItems: 'center', background: '#F1F5F9', padding: '6px 10px', borderRadius: '15px', border: '1px solid #E2E8F0' },
   inputField: { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '16px', padding: '10px 12px', color: '#4A5568' },
   iconButton: { background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '0 8px', display: 'flex', alignItems: 'center' },
-  sendButton: { display: 'flex', alignItems: 'center', gap: '8px', background: '#FF7817', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', marginLeft: '5px' },
-
-  // Added Custom RPG Component Row Styles
-  messageContainerRow: { display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '4px 8px' },
-  chatAvatar: { width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', background: '#E2E8F0', flexShrink: 0 },
-  messageContentBlock: { display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' },
-  headerInfoLine: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' },
-  chatUsernameText: { fontWeight: '700', fontSize: '15px', color: '#2D3748' },
-  chatTimeText: { fontSize: '12px', color: '#718096' },
-  badgeLabelStyle: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    background: '#edf2f7',
-    fontSize: '11px',
-    fontWeight: '800',
-    color: '#4a5568',
-    border: '1px solid #cbd5e0',
-    textTransform: 'uppercase',
-    letterSpacing: '0.3px'
-  }
+  sendButton: { display: 'flex', alignItems: 'center', gap: '8px', background: '#FF7817', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', marginLeft: '5px' }
 };
 
 export default App;
