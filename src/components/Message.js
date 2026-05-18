@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
-function Message({ user, texts, isOwnMessage }) {
+// Deconstruct the new 'avatar' and 'role' props sent from App.js
+function Message({ user, texts, isOwnMessage, avatar, role }) {
   const [zoomedImage, setZoomedImage] = useState(null);
 
   const rawTimestamp = texts[texts.length - 1]?.timestamp;
@@ -12,6 +13,10 @@ function Message({ user, texts, isOwnMessage }) {
     minute: '2-digit',
     hour12: false 
   });
+
+  // Dynamic fallback assets in case older accounts don't have these items set
+  const finalAvatar = avatar || 'https://i.pravatar.cc/150';
+  const finalRole = role || '🩸 Diabeet';
 
   return (
     <div style={{
@@ -26,19 +31,29 @@ function Message({ user, texts, isOwnMessage }) {
         </div>
       )}
 
-      {!isOwnMessage && (
-        <img 
-          src={`https://ui-avatars.com/api/?name=${user}&background=random&color=fff`} 
-          style={styles.avatar} 
-          alt="Avatar"
-        />
-      )}
+      {/* Render the dynamically uploaded user avatar profile photo */}
+      <img 
+        src={finalAvatar} 
+        style={{
+          ...styles.avatar,
+          marginRight: isOwnMessage ? '0' : '12px',
+          marginLeft: isOwnMessage ? '12px' : '0'
+        }} 
+        alt={`${user}'s avatar`}
+      />
 
       <div style={{
         ...styles.contentWrapper,
         alignItems: isOwnMessage ? 'flex-end' : 'flex-start'
       }}>
-        {!isOwnMessage && <div style={styles.username}>{user}</div>}
+        {/* Header containing name and localized level badge */}
+        <div style={{
+          ...styles.headerContainer,
+          flexDirection: isOwnMessage ? 'row-reverse' : 'row'
+        }}>
+          <div style={styles.username}>{user}</div>
+          <div style={styles.badge}>{finalRole}</div>
+        </div>
         
         <div style={{
           ...styles.bubble,
@@ -71,18 +86,40 @@ function Message({ user, texts, isOwnMessage }) {
 }
 
 const styles = {
-  // ... (keeping your existing styles) ...
   messageWrapper: { display: 'flex', marginBottom: '15px', padding: '0 10px' },
-  avatar: { width: '40px', height: '40px', borderRadius: '50%', marginRight: '12px', marginTop: '4px' },
+  avatar: { width: '42px', height: '42px', borderRadius: '50%', marginTop: '2px', objectFit: 'cover', flexShrink: 0 },
   contentWrapper: { display: 'flex', flexDirection: 'column', maxWidth: '75%' },
-  username: { fontSize: '13px', fontWeight: '700', color: '#556987', marginBottom: '4px', marginLeft: '4px' },
+  
+  headerContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '6px'
+  },
+  username: { fontSize: '14px', fontWeight: '700', color: '#2D3748' },
+  
+  // Custom Role badge styling matching Discord's layout template
+  badge: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    background: '#edf2f7',
+    fontSize: '11px',
+    fontWeight: '800',
+    color: '#4a5568',
+    border: '1px solid #cbd5e0',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+    userSelect: 'none'
+  },
+
   bubble: { padding: '12px 16px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' },
   textRow: { fontSize: '15px', lineHeight: '1.4', wordBreak: 'break-word' },
-  timestamp: { fontSize: '11px', color: '#A0AEC0', marginTop: '6px' },
+  timestamp: { fontSize: '11px', color: '#A0AEC0', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
 
-  // --- NEW STYLES FOR ZOOMING ---
   thumbnailImage: {
-    maxWidth: '200px', // Keeps it relatively small in chat
+    maxWidth: '200px', 
     maxHeight: '200px',
     borderRadius: '12px',
     cursor: 'pointer',

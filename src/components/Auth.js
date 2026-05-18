@@ -8,14 +8,13 @@ function Auth({ onLoginSuccess }) {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    avatar: 'https://i.pravatar.cc/150', // Default fallback
+    avatar: '', // Start empty so fallback can handle it if not uploaded
     role: '',
     interests: []
   });
 
   const API_BASE_URL = 'https://diameet-backend.onrender.com';
 
-  // Custom localized roles
   const roleOptions = [
     { title: '🩸 Diabeet', desc: 'Ik wil mijn bloedsuikerwaarden bijhouden en patronen ontdekken.' },
     { title: '💙 Verzorger', desc: 'Ik monitor de gegevens van een gezinslid of geliefde.' },
@@ -28,7 +27,6 @@ function Auth({ onLoginSuccess }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Converts uploaded image to Base64
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -92,12 +90,20 @@ function Auth({ onLoginSuccess }) {
       if (!response.ok) throw new Error(data.error || 'Er is iets misgegaan');
 
       if (isRegistering) {
-        alert(`Account aangemaakt! Welkom bij DiaMEET, ${formData.username}!`);
+        alert(`Account aangemaakt! Welkom bij DiaMEET, ${formData.username}! Je kunt nu inloggen.`);
         setIsRegistering(false);
         setStep(1); 
+        // Clear state for login
+        setFormData({ username: '', password: '', avatar: '', role: '', interests: [] });
       } else {
+        // SUCCESSFUL LOGIN: Save everything to LocalStorage!
         localStorage.setItem('diameet_token', data.token);
         localStorage.setItem('diameet_user', data.username);
+        
+        // Critically store these so App.js knows your customization options instantly
+        if (data.avatar) localStorage.setItem('diameet_avatar', data.avatar);
+        if (data.role) localStorage.setItem('diameet_role', data.role);
+        
         onLoginSuccess(data.username);
       }
     } catch (err) {
@@ -120,7 +126,7 @@ function Auth({ onLoginSuccess }) {
             <input name="password" type="password" placeholder="Wachtwoord" style={styles.input} onChange={handleChange} required />
             
             <button type="submit" style={styles.primaryButton}>Inloggen</button>
-            <p style={styles.toggleText} onClick={() => setIsRegistering(true)}>Nieuw hier? Registreer je account →</p>
+            <p style={styles.toggleText} onClick={() => { setIsRegistering(true); setError(''); }}>Nieuw hier? Registreer je account →</p>
           </form>
         ) : (
           
@@ -148,7 +154,11 @@ function Auth({ onLoginSuccess }) {
               <div style={styles.verticalFlow}>
                 <p style={styles.subheading}>Upload een profielfoto om je profiel compleet te maken:</p>
                 <div style={styles.uploadArea}>
-                  <img src={formData.avatar} alt="Preview" style={styles.avatarPreview} />
+                  {formData.avatar ? (
+                    <img src={formData.avatar} alt="Preview" style={styles.avatarPreview} />
+                  ) : (
+                    <div style={{ ...styles.avatarPreview, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1f22', color: '#b5bac1', fontSize: '13px' }}>Geen foto</div>
+                  )}
                   <label style={styles.uploadLabel}>
                     Kies een afbeelding
                     <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
@@ -213,7 +223,7 @@ function Auth({ onLoginSuccess }) {
               </div>
             )}
 
-            <p style={styles.toggleText} onClick={() => { setIsRegistering(false); setStep(1); }}>Al een account? Annuleer & Log in</p>
+            <p style={styles.toggleText} onClick={() => { setIsRegistering(false); setStep(1); setError(''); }}>Al een account? Annuleer & Log in</p>
           </div>
         )}
       </div>
@@ -238,9 +248,8 @@ const styles = {
   progressTrack: { width: '100%', height: '6px', background: '#1e1f22', borderRadius: '3px', overflow: 'hidden', marginBottom: '10px' },
   progressBar: { height: '100%', background: '#5865f2', transition: 'width 0.3s ease' },
   
-  // File upload configuration
   uploadArea: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '20px', background: '#1e1f22', borderRadius: '8px', border: '2px dashed #4e5058' },
-  avatarPreview: { width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', background: '#2b2d31' },
+  avatarPreview: { width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover' },
   uploadLabel: { padding: '8px 16px', background: '#4e5058', borderRadius: '4px', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' },
   
   discordRoleCard: { padding: '14px', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px', transition: 'all 0.2s' },

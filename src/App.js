@@ -40,9 +40,46 @@ function App() {
 
   const generateId = () => Date.now() + Math.random().toString(36).substr(2, 9);
 
+  // Helper fallback generator: Creates the monogram letter-avatar from before
+  const getMonogramAvatar = (username) => {
+    const nameStr = username ? username.toString() : '??';
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(nameStr)}&background=random&color=fff`;
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     window.location.reload();
+  };
+
+  // --- NEW ACCOUNT DELETION FUNCTION ---
+  const handleDeleteAccount = async () => {
+    const confirmation = window.confirm(
+      "Weet je zeker dat je jouw account definitief wilt verwijderen? Al je gegevens worden permanent gewist."
+    );
+    if (!confirmation) return;
+
+    const token = localStorage.getItem('diameet_token');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Account kon niet worden verwijderd.');
+      }
+
+      alert('Je account is succesvol verwijderd.');
+      handleLogout();
+    } catch (err) {
+      console.error("Deletion Error:", err);
+      alert(`Fout bij verwijderen: ${err.message}`);
+    }
   };
 
   const getPrivateRoomId = (userA, userB) => {
@@ -122,7 +159,12 @@ function App() {
     if (command === '/clear') { setMessages([]); setInputText(''); return; }
     if (command === '/clear perm') { socket.emit('clear-channel-perm', currentChannel); setInputText(''); return; }
 
-    const currentAvatar = localStorage.getItem('diameet_avatar') || 'https://i.pravatar.cc/150';
+    // Stripped random placeholder assets out. If no registration avatar string, fall back to monogram.
+    const rawAvatar = localStorage.getItem('diameet_avatar');
+    const currentAvatar = (rawAvatar && rawAvatar !== 'undefined' && !rawAvatar.includes('pravatar.cc')) 
+      ? rawAvatar 
+      : getMonogramAvatar(user);
+
     const currentRole = localStorage.getItem('diameet_role') || '🩸 Diabeet';
 
     socket.emit('chat-message', { 
@@ -143,7 +185,11 @@ function App() {
     if (!file) return;
     if (file.size > 2000000) return alert("Afbeelding te groot (max 2MB)");
 
-    const currentAvatar = localStorage.getItem('diameet_avatar') || 'https://i.pravatar.cc/150';
+    const rawAvatar = localStorage.getItem('diameet_avatar');
+    const currentAvatar = (rawAvatar && rawAvatar !== 'undefined' && !rawAvatar.includes('pravatar.cc')) 
+      ? rawAvatar 
+      : getMonogramAvatar(user);
+
     const currentRole = localStorage.getItem('diameet_role') || '🩸 Diabeet';
 
     const reader = new FileReader();
@@ -173,12 +219,18 @@ function App() {
       timestamp: currentTs 
     };
     
+    // Explicit Fallback Check: If database records lack pfp data, parse the letter monogram avatar
+    let msgAvatar = current.avatar;
+    if (!msgAvatar || msgAvatar === 'undefined' || msgAvatar.includes('pravatar.cc')) {
+      msgAvatar = getMonogramAvatar(current.user);
+    }
+
     if (lastGroup && lastGroup.user === current.user) {
       lastGroup.texts.push(entry);
     } else {
       acc.push({ 
         user: current.user, 
-        avatar: current.avatar || 'https://i.pravatar.cc/150',
+        avatar: msgAvatar,
         role: current.role || '🩸 Diabeet',
         texts: [entry], 
         timestamp: currentTs 
@@ -195,7 +247,12 @@ function App() {
       userSelect: isResizing ? 'none' : 'auto', 
       cursor: isResizing ? 'col-resize' : 'default' 
     }}>
-      <Navbar user={user} onLogout={handleLogout} />
+      {/* Navbar with injection to support account deletion */}
+      <Navbar 
+        user={user} 
+        onLogout={handleLogout} 
+        onDeleteAccount={handleDeleteAccount} 
+      />
 
       <div style={styles.appContainer}>
         <Sidebar 
@@ -240,7 +297,6 @@ function App() {
                 <React.Fragment key={index}>
                   {showSeparator && <DateSeparator label={label} />}
                   
-                  {/* Clean delegation: Hand everything directly over to Message component properties */}
                   <Message 
                     user={group.user} 
                     avatar={group.avatar}
