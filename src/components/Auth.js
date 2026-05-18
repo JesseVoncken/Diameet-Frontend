@@ -268,8 +268,8 @@ const styles = {
     display: 'flex', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    minHeight: '100vh', 
-    background: 'linear-gradient(135deg, #FFFFFF 40%, #FFF3E0 100%)', 
+    minHeight: '100%', 
+    background: 'linear-gradient(135deg, #FFFFFF 20%, #FFF3E0 100%)', 
     fontFamily: 'sans-serif', 
     padding: '20px' 
   },

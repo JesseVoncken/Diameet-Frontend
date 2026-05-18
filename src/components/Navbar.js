@@ -37,12 +37,6 @@ function Navbar({ user, onLogout, onDeleteAccount }) {
           <div style={styles.activeLink}>
             <span style={styles.navIcon}>&#128101;</span> Community
           </div>
-          <div style={styles.link}>
-            <span style={styles.navIcon}>&#128193;</span> Databank
-          </div>
-          <div style={styles.link}>
-            <span style={styles.navIcon}>&#128197;</span> Events
-          </div>
         </nav>
       </div>
 
