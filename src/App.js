@@ -6,7 +6,6 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import DateSeparator from './components/DateSeparator';
 
-
 // Replace http://localhost:4000 with your actual Render URL
 const socket = io('https://diameet-backend.onrender.com');
 
@@ -22,7 +21,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showPlusMenu, setShowPlusMenu] = useState(false); // State for + menu
+  const [showPlusMenu, setShowPlusMenu] = useState(false); 
   const [currentChannel, setCurrentChannel] = useState('general');
   const [user, setUser] = useState(localStorage.getItem('diameet_user') || null);
   const [usersList, setUsersList] = useState([]);
@@ -30,8 +29,8 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const pickerRef = useRef(null); // Ref for Emoji Picker
-  const plusMenuRef = useRef(null); // Ref for Plus Menu
+  const pickerRef = useRef(null); 
+  const plusMenuRef = useRef(null); 
   const fileInputRef = useRef(null);
 
   // --- 2. HELPERS & HANDLERS ---
@@ -46,7 +45,6 @@ function App() {
     window.location.reload();
   };
 
-  // Helper to ensure both users end up in the same secret room
   const getPrivateRoomId = (userA, userB) => {
     return [userA, userB].sort().join('--'); 
   };
@@ -86,15 +84,14 @@ function App() {
   }, [isResizing]);
 
   // --- 4. DATA FETCHING & SOCKETS ---
-useEffect(() => {
-  if (!user) return;
-  
-  // Use the new Render URL here
-  fetch(`${API_BASE_URL}/api/users`)
-    .then(res => res.json())
-    .then(data => setUsersList(data.filter(u => u.username !== user)))
-    .catch(err => console.error("Error fetching users:", err));
-}, [user]);
+  useEffect(() => {
+    if (!user) return;
+    
+    fetch(`${API_BASE_URL}/api/users`)
+      .then(res => res.json())
+      .then(data => setUsersList(data.filter(u => u.username !== user)))
+      .catch(err => console.error("Error fetching users:", err));
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -125,9 +122,15 @@ useEffect(() => {
     if (command === '/clear') { setMessages([]); setInputText(''); return; }
     if (command === '/clear perm') { socket.emit('clear-channel-perm', currentChannel); setInputText(''); return; }
 
+    // Fetch details stored locally during our new Auth registration wizard
+    const currentAvatar = localStorage.getItem('diameet_avatar') || 'https://i.pravatar.cc/150';
+    const currentRole = localStorage.getItem('diameet_role') || '🩸 Diabeet';
+
     socket.emit('chat-message', { 
       id: generateId(), 
       user, 
+      avatar: currentAvatar,
+      role: currentRole,
       text: inputText, 
       channel: currentChannel, 
       timestamp: new Date() 
@@ -141,11 +144,16 @@ useEffect(() => {
     if (!file) return;
     if (file.size > 2000000) return alert("Afbeelding te groot (max 2MB)");
 
+    const currentAvatar = localStorage.getItem('diameet_avatar') || 'https://i.pravatar.cc/150';
+    const currentRole = localStorage.getItem('diameet_role') || '🩸 Diabeet';
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       socket.emit('chat-message', { 
         id: generateId(), 
         user, 
+        avatar: currentAvatar,
+        role: currentRole,
         image: ev.target.result, 
         channel: currentChannel, 
         timestamp: new Date() 
@@ -155,14 +163,28 @@ useEffect(() => {
     e.target.value = ''; 
   };
 
-  // --- 6. RENDER LOGIC ---
+  // --- 6. RENDER REDUCER WITH AVATAR & BADGES ---
   const groupedMessages = messages.reduce((acc, current) => {
     const lastGroup = acc[acc.length - 1];
     const currentTs = current.timestamp ? new Date(current.timestamp) : new Date();
-    const entry = { id: current.id, text: current.text || null, image: current.image || null, timestamp: currentTs };
+    const entry = { 
+      id: current.id, 
+      text: current.text || null, 
+      image: current.image || null, 
+      timestamp: currentTs 
+    };
     
-    if (lastGroup && lastGroup.user === current.user) lastGroup.texts.push(entry);
-    else acc.push({ user: current.user, texts: [entry], timestamp: currentTs });
+    if (lastGroup && lastGroup.user === current.user) {
+      lastGroup.texts.push(entry);
+    } else {
+      acc.push({ 
+        user: current.user, 
+        avatar: current.avatar || 'https://i.pravatar.cc/150', // Pulls avatar
+        role: current.role || '🩸 Diabeet',                 // Pulls localized badge
+        texts: [entry], 
+        timestamp: currentTs 
+      });
+    }
     return acc;
   }, []);
 
@@ -205,28 +227,36 @@ useEffect(() => {
           </div>
 
           <div style={styles.messageList}>
-            {groupedMessages.map((group, index) => {
-              const dateObj = new Date(group.timestamp);
-              const today = new Date().toDateString();
-              const currentDate = dateObj.toDateString();
-              let showSeparator = false;
-              let label = currentDate === today ? "VANDAAG" : currentDate;
+  {groupedMessages.map((group, index) => {
+    const dateObj = new Date(group.timestamp);
+    const today = new Date().toDateString();
+    const currentDate = dateObj.toDateString();
+    let showSeparator = false;
+    let label = currentDate === today ? "VANDAAG" : currentDate;
 
-              if (index === 0) showSeparator = true;
-              else if (currentDate !== new Date(groupedMessages[index - 1].timestamp).toDateString()) showSeparator = true;
+    if (index === 0) showSeparator = true;
+    else if (currentDate !== new Date(groupedMessages[index - 1].timestamp).toDateString()) showSeparator = true;
 
-              return (
-                <React.Fragment key={index}>
-                  {showSeparator && <DateSeparator label={label} />}
-                  <Message user={group.user} texts={group.texts} isOwnMessage={group.user === user} />
-                </React.Fragment>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
+    return (
+      <React.Fragment key={index}>
+        {showSeparator && <DateSeparator label={label} />}
+        
+        {/* We strip out the broken HTML rows here and pass data straight to the component */}
+        <Message 
+          user={group.user} 
+          avatar={group.avatar} // Pass the uploaded avatar down
+          role={group.role}     // Pass the role badge down
+          timestamp={dateObj}   // Pass timestamp down
+          texts={group.texts} 
+          isOwnMessage={group.user === user} 
+        />
+      </React.Fragment>
+    );
+  })}
+  <div ref={messagesEndRef} />
+</div>
 
           <div style={styles.inputBar}>
-            {/* EMOJI PICKER POPUP */}
             {showEmojiPicker && (
               <div style={styles.emojiPopup} ref={pickerRef}>
                 {EMOJI_LIBRARY.map((section) => (
@@ -243,7 +273,6 @@ useEffect(() => {
             )}
 
             <div style={styles.inputContainer}>
-              {/* PLUS MENU WRAPPER */}
               <div style={{ position: 'relative' }} ref={plusMenuRef}>
                 <button style={styles.iconButton} onClick={() => setShowPlusMenu(!showPlusMenu)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={showPlusMenu ? "#FF7817" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -290,14 +319,14 @@ useEffect(() => {
   );
 }
 
-// --- 7. STYLES ---
+// --- 7. STYLES WITH INCORPORATED CHAT WRAPPERS ---
 const styles = {
-  mainWrapper: { display: 'flex', flexDirection: 'column', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FDFDFE' },
+  mainWrapper: { display: 'flex', flexDirection: 'column', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FDFDFE', fontFamily: 'sans-serif' },
   appContainer: { display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 },
   chatArea: { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' },
   chatHeader: { height: '60px', flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid #E2E8F0', background: '#FDFDFE' },
   channelTitle: { fontSize: '18px', fontWeight: '800', color: '#1A202C' },
-  messageList: { flex: 1, overflowY: 'auto', padding: '20px', minHeight: 0 },
+  messageList: { flex: 1, overflowY: 'auto', padding: '20px', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '14px' },
   resizer: { width: '6px', cursor: 'col-resize', height: '100%', zIndex: 10, borderLeft: '1px solid #E2E8F0', transition: 'background-color 0.2s' },
   inputBar: { padding: '15px 20px', background: '#FDFDFE', borderTop: '1px solid #E2E8F0', flexShrink: 0, position: 'relative' },
   emojiPopup: { position: 'absolute', bottom: '80px', right: '20px', background: 'white', padding: '15px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 1000, border: '1px solid #E2E8F0', width: '250px' },
@@ -309,7 +338,28 @@ const styles = {
   inputContainer: { display: 'flex', alignItems: 'center', background: '#F1F5F9', padding: '6px 10px', borderRadius: '15px', border: '1px solid #E2E8F0' },
   inputField: { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '16px', padding: '10px 12px', color: '#4A5568' },
   iconButton: { background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '0 8px', display: 'flex', alignItems: 'center' },
-  sendButton: { display: 'flex', alignItems: 'center', gap: '8px', background: '#FF7817', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', marginLeft: '5px' }
+  sendButton: { display: 'flex', alignItems: 'center', gap: '8px', background: '#FF7817', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', marginLeft: '5px' },
+
+  // Added Custom RPG Component Row Styles
+  messageContainerRow: { display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '4px 8px' },
+  chatAvatar: { width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', background: '#E2E8F0', flexShrink: 0 },
+  messageContentBlock: { display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' },
+  headerInfoLine: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' },
+  chatUsernameText: { fontWeight: '700', fontSize: '15px', color: '#2D3748' },
+  chatTimeText: { fontSize: '12px', color: '#718096' },
+  badgeLabelStyle: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    background: '#edf2f7',
+    fontSize: '11px',
+    fontWeight: '800',
+    color: '#4a5568',
+    border: '1px solid #cbd5e0',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px'
+  }
 };
 
 export default App;
