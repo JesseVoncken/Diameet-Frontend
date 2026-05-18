@@ -236,6 +236,29 @@ function App() {
               if (index === 0) showSeparator = true;
               else if (currentDate !== new Date(groupedMessages[index - 1].timestamp).toDateString()) showSeparator = true;
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    return (
+      <React.Fragment key={index}>
+        {showSeparator && <DateSeparator label={label} />}
+        
+        {/* We strip out the broken HTML rows here and pass data straight to the component */}
+        <Message 
+          user={group.user} 
+          avatar={group.avatar} // Pass the uploaded avatar down
+          role={group.role}     // Pass the role badge down
+          timestamp={dateObj}   // Pass timestamp down
+          texts={group.texts} 
+          isOwnMessage={group.user === user} 
+        />
+      </React.Fragment>
+    );
+  })}
+  <div ref={messagesEndRef} />
+</div>
+=======
+>>>>>>> origin/main
               return (
                 <React.Fragment key={index}>
                   {showSeparator && <DateSeparator label={label} />}
@@ -254,6 +277,10 @@ function App() {
             })}
             <div ref={messagesEndRef} />
           </div>
+<<<<<<< HEAD
+=======
+>>>>>>> origin/main
+>>>>>>> origin/main
 
           <div style={styles.inputBar}>
             {showEmojiPicker && (
