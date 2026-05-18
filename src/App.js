@@ -121,6 +121,7 @@ function App() {
   }, [isResizing]);
 
   // --- 4. DATA FETCHING & SOCKETS ---
+  // --- 4. DATA FETCHING & SOCKETS (RE-ARCHITECTED) ---
   useEffect(() => {
     if (!user) return;
     
@@ -130,26 +131,33 @@ function App() {
       .catch(err => console.error("Error fetching users:", err));
   }, [user]);
 
+  // Persistent Socket Event Listeners Hook
   useEffect(() => {
     if (!user) return;
-    socket.emit('join-channel', currentChannel);
 
     const onChatMessage = (data) => {
       setMessages((prev) => (prev.some(m => m.id === data.id) ? prev : [...prev, data]));
     };
 
+    const onLoadHistory = (history) => {
+      // Explicitly check that history is a valid array before modifying state
+      setMessages(Array.isArray(history) ? history : []);
+    };
+
+    // Register active real-time listeners immediately
     socket.on('chat-message', onChatMessage);
-    socket.on('load-history', (history) => setMessages(history));
+    socket.on('load-history', onLoadHistory);
     socket.on('channel-cleared-perm', () => setMessages([]));
+
+    // Tell the backend to join the channel room
+    socket.emit('join-channel', currentChannel);
 
     return () => {
       socket.off('chat-message', onChatMessage);
-      socket.off('load-history');
+      socket.off('load-history', onLoadHistory);
       socket.off('channel-cleared-perm');
     };
-  }, [user, currentChannel]);
-
-  useEffect(() => { scrollToBottom(); }, [messages]);
+  }, [user, currentChannel]); // Fires cleanly whenever you toggle rooms or reload the site
 
   // --- 5. MESSAGE SENDING ---
   const sendMessage = () => {

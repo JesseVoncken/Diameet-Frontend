@@ -193,31 +193,42 @@ function Auth({ onLoginSuccess }) {
               </div>
             )}
 
-            {step === 3 && (
-              <div style={styles.verticalFlow}>
-                <p style={styles.subheading}>Wat is jouw rol binnen dit platform?</p>
-                <div style={styles.verticalFlow}>
-                  {roleOptions.map((r) => (
-                    <div 
-                      key={r.title} 
-                      style={{ 
-                        ...styles.discordRoleCard, 
-                        background: formData.role === r.title ? '#5865f215' : '#1e1f22', 
-                        border: formData.role === r.title ? '1px solid #5865f2' : '1px solid transparent' 
-                      }}
-                      onClick={() => handleSelectRole(r.title)}
-                    >
-                      <div style={{ fontWeight: 'bold', color: formData.role === r.title ? '#5865f2' : 'white' }}>{r.title}</div>
-                      <div style={{ fontSize: '12px', color: '#b5bac1' }}>{r.desc}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={styles.rowActions}>
-                  <button onClick={handlePrevStep} style={styles.secondaryButton}>Terug</button>
-                  <button onClick={() => handleNextStep()} style={styles.primaryButton} disabled={!formData.role}>Volgende</button>
-                </div>
-              </div>
-            )}
+            {/* STEP 3: ROLE SELECT */}
+{step === 3 && (
+  <div style={styles.verticalFlow}>
+    <p style={styles.subheading}>Wat is jouw rol binnen dit platform?</p>
+    <div style={styles.verticalFlow}>
+      {roleOptions.map((r) => {
+        const isSelected = formData.role === r.title;
+        return (
+          <div 
+            key={r.title} 
+            style={{ 
+              ...styles.discordRoleCard, 
+              // Active highlight state switches to clean subtle orange
+              background: isSelected ? '#FF781708' : '#FFFFFF', 
+              borderColor: isSelected ? '#FF7817' : '#E2E8F0',
+              boxShadow: isSelected ? '0 4px 12px rgba(255, 120, 23, 0.1)' : '0 4px 10px rgba(0, 0, 0, 0.03)',
+              transform: isSelected ? 'translateY(-1px)' : 'none'
+            }}
+            onClick={() => handleSelectRole(r.title)}
+          >
+            <div style={{ fontWeight: '700', color: isSelected ? '#FF7817' : '#1A202C', fontSize: '15px' }}>
+              {r.title}
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.4' }}>
+              {r.desc}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+    <div style={styles.rowActions}>
+      <button onClick={handlePrevStep} style={styles.secondaryButton}>Terug</button>
+      <button onClick={() => handleNextStep()} style={styles.primaryButton} disabled={!formData.role}>Volgende</button>
+    </div>
+  </div>
+)}
 
             {step === 4 && (
               <div style={styles.verticalFlow}>
@@ -252,29 +263,106 @@ function Auth({ onLoginSuccess }) {
 }
 
 const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#313338', fontFamily: 'sans-serif', padding: '20px' },
-  formCard: { background: '#2b2d31', padding: '30px', borderRadius: '12px', width: '360px', color: 'white', boxShadow: '0 12px 24px rgba(0,0,0,0.3)' },
+  // THE NEW GRADIENT BACKGROUND: Replicates the exact glow from your landing page mock-up
+  container: { 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '100vh', 
+    background: 'linear-gradient(135deg, #FFFFFF 40%, #FFF3E0 100%)', 
+    fontFamily: 'sans-serif', 
+    padding: '20px' 
+  },
+  
+  // Clean, modern glass-morphism style card container
+  formCard: { 
+    background: '#FFFFFF', 
+    padding: '35px 30px', 
+    borderRadius: '16px', 
+    width: '360px', 
+    color: '#1A202C', 
+    boxShadow: '0 10px 30px rgba(255, 120, 23, 0.08), 0 1px 3px rgba(0,0,0,0.02)',
+    border: '1px solid #E2E8F0'
+  },
+  
   verticalFlow: { display: 'flex', flexDirection: 'column', gap: '18px' },
   rowActions: { display: 'flex', gap: '10px', marginTop: '10px' },
-  heading: { textAlign: 'center', margin: 0, fontSize: '24px', fontWeight: 'bold' },
-  subheading: { textAlign: 'center', margin: 0, fontSize: '14px', color: '#b5bac1', lineHeight: '1.4' },
-  input: { padding: '12px', borderRadius: '4px', border: 'none', background: '#1e1f22', color: 'white', fontSize: '15px', outline: 'none' },
-  primaryButton: { flex: 1, padding: '12px', borderRadius: '4px', border: 'none', background: '#5865f2', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' },
-  secondaryButton: { padding: '12px 20px', borderRadius: '4px', border: 'none', background: '#4e5058', color: 'white', cursor: 'pointer', fontWeight: 'bold' },
-  successButton: { flex: 1, padding: '12px', borderRadius: '4px', border: 'none', background: '#23a55a', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' },
-  toggleText: { fontSize: '13px', color: '#00a8fc', textAlign: 'center', cursor: 'pointer', margin: '5px 0 0 0' },
-  errorBox: { background: '#f23f4222', color: '#fa777a', padding: '10px', borderRadius: '4px', fontSize: '13px', border: '1px solid #f23f43', textAlign: 'center' },
+  heading: { textAlign: 'center', margin: 0, fontSize: '26px', fontWeight: '800', color: '#1A202C' },
+  subheading: { textAlign: 'center', margin: 0, fontSize: '14px', color: '#64748B', lineHeight: '1.4' },
   
-  progressTrack: { width: '100%', height: '6px', background: '#1e1f22', borderRadius: '3px', overflow: 'hidden', marginBottom: '10px' },
-  progressBar: { height: '100%', background: '#5865f2', transition: 'width 0.3s ease' },
+  // Styled text inputs matching your dashboard theme
+  input: { 
+    padding: '12px 14px', 
+    borderRadius: '8px', 
+    border: '1px solid #CBD5E1', 
+    background: '#F8FAFC', 
+    color: '#1A202C', 
+    fontSize: '15px', 
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    '&:focus': { borderColor: '#FF7817' }
+  },
   
-  uploadArea: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '20px', background: '#1e1f22', borderRadius: '8px', border: '2px dashed #4e5058' },
-  avatarPreview: { width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover' },
-  uploadLabel: { padding: '8px 16px', background: '#4e5058', borderRadius: '4px', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' },
+  // Custom Orange Accent Buttons matching your brand guidelines
+  primaryButton: { 
+    flex: 1, 
+    padding: '14px', 
+    borderRadius: '8px', 
+    border: 'none', 
+    background: '#FF7817', 
+    color: 'white', 
+    cursor: 'pointer', 
+    fontWeight: '700', 
+    fontSize: '15px',
+    boxShadow: '0 4px 12px rgba(255, 120, 23, 0.2)'
+  },
+  secondaryButton: { 
+    padding: '12px 20px', 
+    borderRadius: '8px', 
+    border: '1px solid #CBD5E1', 
+    background: '#FFFFFF', 
+    color: '#64748B', 
+    cursor: 'pointer', 
+    fontWeight: '700' 
+  },
+  successButton: { 
+    flex: 1, 
+    padding: '14px', 
+    borderRadius: '8px', 
+    border: 'none', 
+    background: '#22C55E', 
+    color: 'white', 
+    cursor: 'pointer', 
+    fontWeight: '700', 
+    fontSize: '15px' 
+  },
   
-  discordRoleCard: { padding: '14px', borderRadius: '6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px', transition: 'all 0.2s' },
+  toggleText: { fontSize: '13px', color: '#FF7817', textAlign: 'center', cursor: 'pointer', margin: '5px 0 0 0', fontWeight: '600' },
+  errorBox: { background: '#FEF2F2', color: '#EF4444', padding: '10px', borderRadius: '6px', fontSize: '13px', border: '1px solid #FCA5A5', textAlign: 'center' },
+  
+  progressTrack: { width: '100%', height: '6px', background: '#F1F5F9', borderRadius: '3px', overflow: 'hidden', marginBottom: '10px' },
+  progressBar: { height: '100%', background: '#FF7817', transition: 'width 0.3s ease' },
+  
+  uploadArea: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '20px', background: '#F8FAFC', borderRadius: '12px', border: '2px dashed #CBD5E1' },
+  avatarPreview: { width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' },
+  uploadLabel: { padding: '8px 16px', background: '#E2E8F0', color: '#4A5568', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' },
+  
+  // Refined Light Role selection cards matching Discord structure but inside a clean workspace palette
+  // Refined light-themed role cards matching your new aesthetic perfectly
+  discordRoleCard: { 
+    padding: '16px', 
+    borderRadius: '12px', 
+    cursor: 'pointer', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '6px', 
+    transition: 'all 0.2s ease',
+    background: '#FFFFFF',
+    border: '1px solid #E2E8F0',
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)'
+  },
   tagWrapContainer: { display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' },
-  badge: { padding: '8px 12px', borderRadius: '16px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', userSelect: 'none', transition: 'all 0.15s' }
+  badge: { padding: '8px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', userSelect: 'none', transition: 'all 0.15s', border: '1px solid #E2E8F0' }
 };
 
 export default Auth;
