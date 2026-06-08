@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function Auth({ onLoginSuccess }) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -15,13 +15,18 @@ function Auth({ onLoginSuccess }) {
 
   const API_BASE_URL = 'https://diameet-backend.onrender.com';
 
-  const roleOptions = [
-    { title: '🩸 Diabeet', desc: 'Ik wil mijn bloedsuikerwaarden bijhouden en patronen ontdekken.' },
-    { title: '💙 Verzorger', desc: 'Ik monitor de gegevens van een gezinslid of geliefde.' },
-    { title: '🩺 Medisch personeel', desc: 'Ik ben een behandelaar of behandelaar-ondersteuner.' }
-  ];
+  // Disable page scrolling while this auth component is mounted
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, []);
 
-  const interestTags = ['#Type1', '#Type2', '#Pomp', '#Pen', '#CGM', '#FGM', '#Voeding', '#Sport'];
+  const roleOptions = [
+    { title: '🩸 Ik ben iemand met diabetes', desc: 'Ik wil mijn bloedsuikerwaarden bijhouden en patronen ontdekken.' },
+    { title: '💙 Ik ken iemand met diabetes', desc: 'Ik monitor de gegevens van een gezinslid of geliefde.' },
+    { title: '🩺 Ik behandel iemand met diabetes', desc: 'Ik ben een behandelaar of behandelaar-ondersteuner.' }
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -145,15 +150,14 @@ function Auth({ onLoginSuccess }) {
         viewBox="0 0 1877 838"
         preserveAspectRatio="xMidYMid slice"
         style={{
-          position: 'absolute',
-          top: '-8%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '140%',
-          height: 'auto',
-          zIndex: 0,
-          opacity: 0.12,
-          pointerEvents: 'none'
+            position: 'absolute',
+            top: '-8%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '110vw',
+            height: 'auto',
+            zIndex: 0,
+            pointerEvents: 'none'
         }}
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -268,16 +272,16 @@ const styles = {
     position: 'relative',
     minHeight: '100vh', 
     background: '#FC850F', 
-    fontFamily: 'sans-serif', 
+    fontFamily: "var(--font-body, 'Helvetica', sans-serif)", 
     padding: '20px' 
   },
   
   // Clean, modern glass-morphism style card container
   formCard: { 
     background: '#FFEBD7', 
-    padding: '35px 30px', 
+    padding: '28px', 
     borderRadius: '16px', 
-    width: '360px', 
+    width: 'min(92%, 360px)', 
     color: '#1A202C', 
     boxShadow: '0 10px 30px rgba(255, 120, 23, 0.08), 0 1px 3px rgba(0,0,0,0.02)',
     border: '1px solid #E2E8F0',
@@ -287,8 +291,8 @@ const styles = {
   
   verticalFlow: { display: 'flex', flexDirection: 'column', gap: '18px' },
   rowActions: { display: 'flex', gap: '10px', marginTop: '10px' },
-  heading: { textAlign: 'center', margin: 0, fontSize: '26px', fontWeight: '800', color: '#1A202C' },
-  subheading: { textAlign: 'center', margin: 0, fontSize: '14px', color: '#64748B', lineHeight: '1.4' },
+  heading: { textAlign: 'center', margin: 0, fontSize: 'clamp(20px, 5vw, 26px)', fontWeight: '800', color: '#3D2D1E', letterSpacing: '0.03em', fontFamily: "var(--font-heading, 'Helvetica Compressed', sans-serif)" },
+  subheading: { textAlign: 'center', margin: 0, fontSize: 'clamp(12px, 3.5vw, 14px)', color: '#3D2D1E', lineHeight: '1.4' },
   
   // Styled text inputs matching your dashboard theme
   input: { 
@@ -297,7 +301,7 @@ const styles = {
     border: '1px solid #CBD5E1', 
     background: '#F8FAFC', 
     color: '#1A202C', 
-    fontSize: '15px', 
+    fontSize: 'clamp(14px, 3.5vw, 15px)', 
     outline: 'none',
     transition: 'border-color 0.2s',
     '&:focus': { borderColor: '#FF7817' }
@@ -306,14 +310,14 @@ const styles = {
   // Custom Orange Accent Buttons matching your brand guidelines
   primaryButton: { 
     flex: 1, 
-    padding: '14px', 
+    padding: '12px', 
     borderRadius: '8px', 
     border: 'none', 
     background: '#FF7817', 
     color: 'white', 
     cursor: 'pointer', 
     fontWeight: '700', 
-    fontSize: '15px',
+    fontSize: 'clamp(14px, 3.5vw, 15px)',
     boxShadow: '0 4px 12px rgba(255, 120, 23, 0.2)'
   },
   secondaryButton: { 
@@ -327,14 +331,14 @@ const styles = {
   },
   successButton: { 
     flex: 1, 
-    padding: '14px', 
+    padding: '12px', 
     borderRadius: '8px', 
     border: 'none', 
     background: '#22C55E', 
     color: 'white', 
     cursor: 'pointer', 
     fontWeight: '700', 
-    fontSize: '15px' 
+    fontSize: 'clamp(14px, 3.5vw, 15px)' 
   },
   
   toggleText: { fontSize: '13px', color: '#FF7817', textAlign: 'center', cursor: 'pointer', margin: '5px 0 0 0', fontWeight: '600' },
@@ -344,8 +348,8 @@ const styles = {
   progressBar: { height: '100%', background: '#FF7817', transition: 'width 0.3s ease' },
   
   uploadArea: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '20px', background: '#F8FAFC', borderRadius: '12px', border: '2px dashed #CBD5E1' },
-  avatarPreview: { width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' },
-  uploadLabel: { padding: '8px 16px', background: '#E2E8F0', color: '#4A5568', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' },
+  avatarPreview: { width: 'min(22vw, 100px)', height: 'min(22vw, 100px)', borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' },
+  uploadLabel: { padding: '8px 14px', background: '#E2E8F0', color: '#4A5568', borderRadius: '6px', fontSize: 'clamp(13px, 3vw, 14px)', cursor: 'pointer', fontWeight: '700', transition: 'background 0.2s' },
   
   // Refined Light Role selection cards matching Discord structure but inside a clean workspace palette
   // Refined light-themed role cards matching your new aesthetic perfectly
@@ -362,7 +366,7 @@ const styles = {
     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)'
   },
   tagWrapContainer: { display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' },
-  badge: { padding: '8px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', userSelect: 'none', transition: 'all 0.15s', border: '1px solid #E2E8F0' }
+  badge: { padding: '8px 12px', borderRadius: '20px', fontSize: 'clamp(12px, 3vw, 13px)', fontWeight: '700', cursor: 'pointer', userSelect: 'none', transition: 'all 0.15s', border: '1px solid #E2E8F0' }
 };
 
 export default Auth;

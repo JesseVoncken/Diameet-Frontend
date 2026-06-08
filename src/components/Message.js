@@ -16,7 +16,18 @@ function Message({ user, texts, isOwnMessage, avatar, role }) {
 
   // Dynamic fallback assets in case older accounts don't have these items set
   const finalAvatar = avatar || 'https://i.pravatar.cc/150';
-  const finalRole = role || '🩸 Diabeet';
+  const finalRole = role || '';
+
+  // Exact role constants (must match titles in Auth.js)
+  const ROLE_DIABEET = '🩸 Ik ben iemand met diabetes';
+  const ROLE_KEN = '💙 Ik ken iemand met diabetes';
+  const ROLE_MEDISCH = '🩺 Ik behandel iemand met diabetes';
+
+  // Map exact roles to colors
+  let roleColor = '#CBD5E1'; // neutral fallback
+  if (finalRole === ROLE_DIABEET) roleColor = '#FF9B39';
+  else if (finalRole === ROLE_MEDISCH) roleColor = '#3B82F6';
+  else if (finalRole === ROLE_KEN) roleColor = '#22C55E';
 
   return (
     <div style={{
@@ -31,13 +42,14 @@ function Message({ user, texts, isOwnMessage, avatar, role }) {
         </div>
       )}
 
-      {/* Render the dynamically uploaded user avatar profile photo */}
+      {/* Render the dynamically uploaded user avatar profile photo with role-colored stroke */}
       <img 
         src={finalAvatar} 
         style={{
           ...styles.avatar,
           marginRight: isOwnMessage ? '0' : '12px',
-          marginLeft: isOwnMessage ? '12px' : '0'
+          marginLeft: isOwnMessage ? '12px' : '0',
+          border: `3px solid ${roleColor}`
         }} 
         alt={`${user}'s avatar`}
       />
@@ -51,8 +63,22 @@ function Message({ user, texts, isOwnMessage, avatar, role }) {
           ...styles.headerContainer,
           flexDirection: isOwnMessage ? 'row-reverse' : 'row'
         }}>
+          <svg
+            viewBox="0 0 33 33"
+            width="20"
+            height="20"
+            style={{
+              flexShrink: 0,
+              marginRight: isOwnMessage ? '0' : '0.12em',
+              marginLeft: isOwnMessage ? '0.12em' : '0'
+            }}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12.7889 2.77503C13.7239 -0.924871 18.9807 -0.924871 19.9156 2.77503V2.77503C20.4768 4.9958 22.9106 6.16784 24.9967 5.22195V5.22195C28.4723 3.64605 31.7499 7.75602 29.4401 10.7938V10.7938C28.0538 12.6172 28.6548 15.2507 30.6951 16.292V16.292C34.0942 18.0268 32.9244 23.1518 29.1092 23.24V23.24C26.8193 23.2929 25.135 25.4049 25.593 27.6492V27.6492C26.356 31.3884 21.6197 33.6692 19.1721 30.7414V30.7414C17.7029 28.984 15.0017 28.984 13.5325 30.7414V30.7414C11.0848 33.6692 6.34859 31.3884 7.11158 27.6492V27.6492C7.56955 25.4049 5.88532 23.2929 3.59537 23.24V23.24C-0.219813 23.1518 -1.38957 18.0268 2.00953 16.292V16.292C4.04974 15.2507 4.65084 12.6172 3.26445 10.7938V10.7938C0.954665 7.75602 4.23225 3.64605 7.70787 5.22195V5.22195C9.79402 6.16784 12.2278 4.9958 12.7889 2.77503V2.77503Z"
+              fill={roleColor}
+            />
+          </svg>
           <div style={styles.username}>{user}</div>
-          <div style={styles.badge}>{finalRole}</div>
         </div>
         
         <div style={{

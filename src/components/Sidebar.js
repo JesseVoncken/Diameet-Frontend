@@ -69,6 +69,19 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
           const privateRoomId = getPrivateRoomId(currentUser, u.username);
           const isActive = currentChannel === privateRoomId;
 
+          // Determine avatar source (use uploaded avatar when available)
+          const avatarSrc = u.avatar && u.avatar !== 'undefined' ? u.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=random&color=fff`;
+
+          // Map exact role titles from Auth.js to colors
+          const ROLE_DIABEET = '🩸 Ik ben iemand met diabetes';
+          const ROLE_KEN = '💙 Ik ken iemand met diabetes';
+          const ROLE_MEDISCH = '🩺 Ik behandel iemand met diabetes';
+          const roleVal = u.role || '';
+          let borderColor = '#CBD5E1';
+          if (roleVal === ROLE_DIABEET) borderColor = '#FF9B39';
+          else if (roleVal === ROLE_MEDISCH) borderColor = '#3B82F6';
+          else if (roleVal === ROLE_KEN) borderColor = '#22C55E';
+
           return (
             <div 
               key={u._id || u.username} 
@@ -80,8 +93,8 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
               }}
             >
               <img 
-                src={`https://ui-avatars.com/api/?name=${u.username}&background=random&color=fff`} 
-                style={styles.userAvatar} 
+                src={avatarSrc} 
+                style={{ ...styles.userAvatar, border: `3px solid ${borderColor}` }} 
                 alt="Avatar"
               />
               <div style={styles.itemInfo}>
