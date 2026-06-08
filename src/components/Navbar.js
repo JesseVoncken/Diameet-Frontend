@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ProfileSettings from './settings';
+import Friends from './friends';
+import logo from '../assets/logo.svg';
 
-function Navbar({ user, onLogout, onDeleteAccount }) {
+function Navbar({ user, onLogout, onDeleteAccount, onToggleSidebar, isPhone = false }) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -25,28 +30,37 @@ function Navbar({ user, onLogout, onDeleteAccount }) {
     ? cachedAvatar
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user || '??')}&background=random&color=fff`;
 
+  // Static app branding
+  const BRAND = 'Diameet';
+
   return (
     <div style={styles.navContainer}>
       <div style={styles.leftSection}>
-        <div style={styles.logoBox}>
-          <span style={styles.logoIcon}>&#8605;</span>
-        </div>
-        <h1 style={styles.brandName}>Dia<span style={{fontWeight: '900'}}>MEET</span></h1>
+        {isPhone && (
+          <button style={styles.hamburger} onClick={onToggleSidebar} aria-label="Toggle menu">
+            <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="20" height="2" rx="1" fill="currentColor" />
+              <rect y="6" width="20" height="2" rx="1" fill="currentColor" />
+              <rect y="12" width="20" height="2" rx="1" fill="currentColor" />
+            </svg>
+          </button>
+        )}
+
+        {/* Branding: use bundled logo */}
+        <img src={logo} alt="Brand logo" style={styles.brandImage} />
+        {!isPhone && <h2 style={styles.brandName}>{BRAND}</h2>}
       </div>
 
       <div style={styles.rightSection}>
-        <div style={styles.notification}>
-          &#128276;<span style={styles.dot}></span>
-        </div>
 
         {/* Dropdown Wrapper */}
         <div style={styles.dropdownWrapper} ref={dropdownRef}>
           <div 
-            style={styles.userProfile} 
+            style={styles.userProfile}
             onClick={() => setShowDropdown(!showDropdown)}
           >
             <div style={styles.userInfo}>
-              <div style={styles.userName}>{user} &#9662;</div>
+              <div style={isPhone ? {...styles.userName, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'} : styles.userName}>{user} &#9662;</div>
               {/* Renders the custom selected registration role instead of hardcoded data */}
               <div style={styles.userRole}>{cachedRole}</div>
             </div>
@@ -59,8 +73,24 @@ function Navbar({ user, onLogout, onDeleteAccount }) {
 
           {showDropdown && (
             <div style={styles.dropdownMenu}>
-              <div style={styles.dropdownItem}>Profiel instellingen</div>
-              <div style={styles.dropdownItem}>Bestanden</div>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  setShowSettings(true);
+                  setShowDropdown(false);
+                }}
+              >
+                Profiel instellingen
+              </div>
+              <div 
+                style={styles.dropdownItem}
+                onClick={() => {
+                  setShowFriends(true);
+                  setShowDropdown(false);
+                }}
+              >
+                Vrienden
+              </div>
               
               {/* THE NEW ACCOUNT DELETION ITEM (Styled to match your layout perfectly) */}
               <div 
@@ -84,6 +114,19 @@ function Navbar({ user, onLogout, onDeleteAccount }) {
           )}
         </div>
       </div>
+
+      {showSettings && (
+        <ProfileSettings onClose={() => setShowSettings(false)} user={user} />
+      )}
+
+      {showFriends && (
+        <div style={styles.friendsModalOverlay} onClick={() => setShowFriends(false)}>
+          <div style={styles.friendsModalContent} onClick={(e) => e.stopPropagation()}>
+            <button style={styles.friendsCloseBtn} onClick={() => setShowFriends(false)}>×</button>
+            <Friends user={user} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -91,8 +134,8 @@ function Navbar({ user, onLogout, onDeleteAccount }) {
 const styles = {
   navContainer: {
     height: '70px',
-    background: '#FFFFFF',
-    borderBottom: '1px solid #E2E8F0',
+    background: '#FFEBD7',
+    borderBottom: '1px solid #AE9881',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -103,6 +146,15 @@ const styles = {
     fontFamily: 'sans-serif'
   },
   leftSection: { display: 'flex', alignItems: 'center', gap: '20px' },
+  hamburger: {
+    background: 'transparent',
+    border: 'none',
+    color: '#3D2D1E',
+    cursor: 'pointer',
+    padding: '6px',
+    display: 'flex',
+    alignItems: 'center'
+  },
   logoBox: {
     background: '#FF7817',
     width: '36px',
@@ -114,7 +166,8 @@ const styles = {
     color: 'white',
     fontSize: '20px'
   },
-  brandName: { fontSize: '22px', color: '#1A202C', margin: 0, letterSpacing: '-0.5px' },
+  brandName: { fontSize: '22px', color: '#3D2D1E', margin: 0, letterSpacing: '-0.5px' },
+  brandImage: { width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', marginRight: '10px' },
   navLinks: { display: 'flex', gap: '8px', marginLeft: '30px' },
   activeLink: {
     display: 'flex', alignItems: 'center', gap: '8px',
@@ -137,25 +190,26 @@ const styles = {
     display: 'flex', 
     alignItems: 'center', 
     gap: '12px', 
-    borderLeft: '1px solid #E2E8F0', 
+    borderLeft: '1px solid #AE9881', 
     paddingLeft: '20px',
     cursor: 'pointer',
     userSelect: 'none'
   },
   userInfo: { textAlign: 'right' },
-  userName: { fontSize: '14px', fontWeight: '700', color: '#1A202C' },
-  userRole: { fontSize: '12px', color: '#94A3B8' },
-  navAvatar: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', background: '#F1F5F9' },
+  userName: { fontSize: '14px', fontWeight: '700', color: '#3D2D1E' },
+  userRole: { fontSize: '12px', color: '#AE9881' },
+  navAvatar: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', background: '#F1F5F9', boxSizing: 'border-box' },
+
   
   dropdownMenu: {
     position: 'absolute',
     top: '60px',
     right: '0',
-    background: 'white',
+    background: '#FFEBD7',
     minWidth: '190px',
     borderRadius: '12px',
     boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-    border: '1px solid #E2E8F0',
+    border: '1px solid #AE9881',
     padding: '8px',
     zIndex: 1000,
     display: 'flex',
@@ -181,8 +235,47 @@ const styles = {
   },
   divider: {
     height: '1px',
-    background: '#E2E8F0',
+    background: '#AE9881',
     margin: '8px 0'
+  },
+  friendsModalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999
+  },
+  friendsModalContent: {
+    background: '#FDFDFE',
+    borderRadius: '16px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+    width: 'min(90%, 600px)',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    position: 'relative'
+  },
+  friendsCloseBtn: {
+    position: 'absolute',
+    top: '12px',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    fontSize: '28px',
+    color: '#AE9881',
+    cursor: 'pointer',
+    padding: '0',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '8px',
+    zIndex: 10000
   }
 };
 

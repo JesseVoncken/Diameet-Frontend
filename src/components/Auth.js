@@ -4,6 +4,8 @@ function Auth({ onLoginSuccess }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [step, setStep] = useState(1); 
   const [error, setError] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   
   const [formData, setFormData] = useState({
     username: '',
@@ -173,7 +175,12 @@ function Auth({ onLoginSuccess }) {
             {error && <div style={styles.errorBox}>{error}</div>}
             
             <input name="username" placeholder="Gebruikersnaam" style={styles.input} onChange={handleChange} required />
-            <input name="password" type="password" placeholder="Wachtwoord" style={styles.input} onChange={handleChange} required />
+            <div style={styles.passwordWrapper}>
+              <input name="password" type={showLoginPassword ? "text" : "password"} placeholder="Wachtwoord" style={{...styles.input, paddingRight: '45px'}} onChange={handleChange} required />
+              <button type="button" style={styles.eyeButton} onClick={() => setShowLoginPassword(!showLoginPassword)}>
+                {showLoginPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
             
             <button type="submit" style={styles.primaryButton}>Inloggen</button>
             <p style={styles.toggleText} onClick={() => { setIsRegistering(true); setError(''); }}>Nieuw hier? Registreer je account →</p>
@@ -191,7 +198,12 @@ function Auth({ onLoginSuccess }) {
               <form onSubmit={handleNextStep} style={styles.verticalFlow}>
                 <p style={styles.subheading}>Kies een unieke gebruikersnaam en een sterk wachtwoord.</p>
                 <input name="username" value={formData.username} placeholder="Gebruikersnaam" style={styles.input} onChange={handleChange} required />
-                <input name="password" value={formData.password} type="password" placeholder="Wachtwoord" style={styles.input} onChange={handleChange} required />
+                <div style={styles.passwordWrapper}>
+                  <input name="password" value={formData.password} type={showRegisterPassword ? "text" : "password"} placeholder="Wachtwoord" style={{...styles.input, paddingRight: '45px'}} onChange={handleChange} required />
+                  <button type="button" style={styles.eyeButton} onClick={() => setShowRegisterPassword(!showRegisterPassword)}>
+                    {showRegisterPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
                 <button type="submit" style={styles.primaryButton}>Volgende Stap</button>
               </form>
             )}
@@ -237,7 +249,7 @@ function Auth({ onLoginSuccess }) {
             }}
             onClick={() => handleSelectRole(r.title)}
           >
-            <div style={{ fontWeight: '700', color: isSelected ? '#FF7817' : '#1A202C', fontSize: '15px' }}>
+              <div style={{ fontWeight: '700', color: isSelected ? '#FF7817' : '#3D2D1E', fontSize: '15px' }}>
               {r.title}
             </div>
             <div style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.4' }}>
@@ -282,7 +294,7 @@ const styles = {
     padding: '28px', 
     borderRadius: '16px', 
     width: 'min(92%, 360px)', 
-    color: '#1A202C', 
+    color: '#3D2D1E', 
     boxShadow: '0 10px 30px rgba(255, 120, 23, 0.08), 0 1px 3px rgba(0,0,0,0.02)',
     border: '1px solid #E2E8F0',
     position: 'relative',
@@ -300,11 +312,32 @@ const styles = {
     borderRadius: '8px', 
     border: '1px solid #CBD5E1', 
     background: '#F8FAFC', 
-    color: '#1A202C', 
+    color: '#3D2D1E', 
     fontSize: 'clamp(14px, 3.5vw, 15px)', 
     outline: 'none',
     transition: 'border-color 0.2s',
     '&:focus': { borderColor: '#FF7817' }
+  },
+  
+  // Password input wrapper with eye icon positioning
+  passwordWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '18px',
+    padding: '4px 8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#64748B',
+    transition: 'color 0.2s'
   },
   
   // Custom Orange Accent Buttons matching your brand guidelines

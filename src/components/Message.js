@@ -1,8 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import UserProfileModal from './UserProfileModal';
 
 // Deconstruct the new 'avatar' and 'role' props sent from App.js
-function Message({ user, texts, isOwnMessage, avatar, role }) {
+function Message({ user, texts, isOwnMessage, avatar, role, currentUser, onToggleReaction }) {
   const [zoomedImage, setZoomedImage] = useState(null);
+  const [reaction, setReaction] = useState({ count: 0, me: false });
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [pickerLeft, setPickerLeft] = useState(null);
+  const [isBubbleHover, setIsBubbleHover] = useState(false);
+  const containerRef = useRef(null);
+  const bubbleRef = useRef(null);
+  const reactBtnRef = useRef(null);
+
+  // Close reaction picker when clicking outside
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setGroupPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  // Compute picker placement when opened so it stays centered on the react button
+  useEffect(() => {
+    if (!groupPickerOpen) return;
+    const POPUP_W = 220; // must match styles.pickerPopup.width
+    const br = bubbleRef.current;
+    const btn = reactBtnRef.current;
+    if (!br || !btn) {
+      setPickerLeft(null);
+      return;
+    }
+    const bubbleRect = br.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+
+    // compute left relative to bubble: center the popup on the button center
+    const centerX = (btnRect.left + btnRect.right) / 2;
+    const desiredAbsolute = centerX - (POPUP_W / 2);
+
+    // clamp to viewport with 8px margin
+    const minAbsolute = 8;
+    const maxAbsolute = Math.max(8, window.innerWidth - POPUP_W - 8);
+    const finalAbsolute = Math.min(maxAbsolute, Math.max(minAbsolute, desiredAbsolute));
+
+    // convert back to left relative to bubble
+    const leftPx = finalAbsolute - bubbleRect.left;
+    setPickerLeft(`${leftPx}px`);
+  }, [groupPickerOpen]);
 
   const rawTimestamp = texts[texts.length - 1]?.timestamp;
   const dateObj = new Date(rawTimestamp);
@@ -29,8 +76,28 @@ function Message({ user, texts, isOwnMessage, avatar, role }) {
   else if (finalRole === ROLE_MEDISCH) roleColor = '#3B82F6';
   else if (finalRole === ROLE_KEN) roleColor = '#22C55E';
 
+  // --- NEW: DYNAMIC BUBBLE BACKGROUND CONFIGURATION ---
+  // Replicates the soft gradient look from the screenshot while keeping text highly readable
+  let bubbleBackground = '#FFFFFF';
+  
+  if (isOwnMessage) {
+    // Keep your own message a cohesive brand color or gradient
+    bubbleBackground = '#FF7817'; 
+  } else {
+    // Assign a soft gradient depending on the role of the person sending the message
+    if (finalRole === ROLE_DIABEET) {
+      bubbleBackground = 'linear-gradient(135deg, #FFEBD7 10%, #FFCC99 100%)'; // Soft cyan to warm orange tint
+    } else if (finalRole === ROLE_MEDISCH) {
+      bubbleBackground = 'linear-gradient(135deg, #FFEBD7 10%, #D9F6FF 100%)'; // Soft blue gradient
+    } else if (finalRole === ROLE_KEN) {
+      bubbleBackground = 'linear-gradient(135deg, #FFEBD7 10%, #D3FDD4 100%)'; // Soft green gradient
+    } else {
+      bubbleBackground = 'linear-gradient(135deg, #FFEBD7 20%, #F1F5F9 100%)'; // Clean fallback gradient
+    }
+  }
+
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       ...styles.messageWrapper,
       flexDirection: isOwnMessage ? 'row-reverse' : 'row'
     }}>
@@ -47,11 +114,12 @@ function Message({ user, texts, isOwnMessage, avatar, role }) {
         src={finalAvatar} 
         style={{
           ...styles.avatar,
-          marginRight: isOwnMessage ? '0' : '12px',
-          marginLeft: isOwnMessage ? '12px' : '0',
-          border: `3px solid ${roleColor}`
+          margin: '0 12px',
+          border: `3px solid ${roleColor}`,
+          cursor: !isOwnMessage ? 'pointer' : 'default'
         }} 
         alt={`${user}'s avatar`}
+        onClick={() => !isOwnMessage && setShowUserProfile(true)}
       />
 
       <div style={{
@@ -81,40 +149,121 @@ function Message({ user, texts, isOwnMessage, avatar, role }) {
           <div style={styles.username}>{user}</div>
         </div>
         
-        <div style={{
+        <div ref={bubbleRef} style={{
           ...styles.bubble,
-          backgroundColor: isOwnMessage ? '#FF7817' : '#FFFFFF',
-          color: isOwnMessage ? '#FFFFFF' : '#1A202C',
+          background: bubbleBackground, // Switched from 'backgroundColor' to 'background' to support gradients
+          color: isOwnMessage ? '#FFFFFF' : '#3D2D1E',
           borderTopLeftRadius: isOwnMessage ? '18px' : '4px',
           borderTopRightRadius: isOwnMessage ? '4px' : '18px',
-          border: isOwnMessage ? 'none' : '1px solid #E2E8F0',
-        }}>
+        }}
+        onMouseEnter={() => setIsBubbleHover(true)}
+        onMouseLeave={() => { setIsBubbleHover(false); setGroupPickerOpen(false); }}>
           {texts.map((item, i) => (
-            <div key={item.id || i} style={styles.textRow}>
+              <div
+                key={item.id || i}
+                style={{ ...styles.textRow }}
+              >
               {item.text && <div style={{ marginBottom: item.image ? '8px' : '0' }}>{item.text}</div>}
-              
+
               {item.image && (
-                <img 
-                  src={item.image} 
-                  alt="sent" 
-                  style={styles.thumbnailImage} 
+                <img
+                  src={item.image}
+                  alt="sent"
+                  style={styles.thumbnailImage}
                   onClick={() => setZoomedImage(item.image)}
                 />
               )}
             </div>
           ))}
+
+          {/* Aggregate item-level reactions into group-level display */}
+          {(() => {
+            const agg = {};
+            texts.forEach(item => {
+              if (item.reactions) {
+                Object.entries(item.reactions).forEach(([emoji, users]) => {
+                  if (!agg[emoji]) agg[emoji] = new Set();
+                  users.forEach(u => agg[emoji].add(u));
+                });
+              }
+            });
+            const entries = Object.entries(agg).map(([emoji, set]) => ({ emoji, users: Array.from(set) }));
+            if (entries.length === 0) return null;
+            return (
+              <div style={styles.reactionsRow}>
+                {entries.map(({emoji, users}) => {
+                  const reactedByMe = users.includes(currentUser);
+                  return (
+                    <button key={emoji} style={{
+                      ...styles.reactionPill,
+                      background: reactedByMe ? '#FF7817' : '#FFFFFF',
+                      color: reactedByMe ? '#FFFFFF' : '#3D2D1E',
+                      border: reactedByMe ? 'none' : '1px solid #E6E0D8'
+                    }} onClick={() => {
+                      // call onToggleReaction on the first text id as representative
+                      const repId = texts[0]?.id || texts[texts.length-1]?.id;
+                      onToggleReaction && onToggleReaction(repId, emoji);
+                    }}>
+                      <span style={{ marginRight: 6 }}>{emoji}</span>
+                      <span style={{ fontWeight: 700 }}>{users.length}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Group-level react icon (opens emoji picker) */}
+          {isBubbleHover && (
+            <button
+              ref={reactBtnRef}
+              aria-label="Open reactions"
+              style={styles.reactIcon}
+              onClick={(e) => { e.stopPropagation(); setGroupPickerOpen(open => !open); }}
+            >
+              🙂
+            </button>
+          )}
+
+          {groupPickerOpen && (
+            <div
+              style={{
+                ...styles.pickerPopup,
+                ...(pickerLeft !== null ? { left: pickerLeft } : { right: 8 })
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {['👍','❤️','😂','😮','😢','🙏'].map(em => (
+                <button key={em} onClick={() => {
+                  const repId = texts[0]?.id || texts[texts.length-1]?.id;
+                  onToggleReaction && onToggleReaction(repId, em);
+                  setGroupPickerOpen(false);
+                }} style={styles.pickerEmoji}>{em}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={styles.timestamp}>{displayTime}</div>
       </div>
+
+      {showUserProfile && (
+        <UserProfileModal 
+          user={user}
+          avatar={finalAvatar}
+          role={finalRole}
+          onClose={() => setShowUserProfile(false)}
+        />
+      )}
     </div>
   );
 }
 
 const styles = {
-  messageWrapper: { display: 'flex', marginBottom: '15px', padding: '0 10px' },
-  avatar: { width: '42px', height: '42px', borderRadius: '50%', marginTop: '2px', objectFit: 'cover', flexShrink: 0 },
-  contentWrapper: { display: 'flex', flexDirection: 'column', maxWidth: '75%' },
+  messageWrapper: { display: 'flex', marginBottom: '15px', padding: '0 16px', boxSizing: 'border-box', width: '100%' },
+  avatar: { width: '42px', height: '42px', borderRadius: '50%', marginTop: '2px', objectFit: 'cover', flexShrink: 0, boxSizing: 'border-box', marginLeft: 0, marginRight: 0 },
+
+  contentWrapper: { display: 'flex', flexDirection: 'column', maxWidth: '100%', minWidth: 0 },
   
   headerContainer: {
     display: 'flex',
@@ -122,9 +271,8 @@ const styles = {
     gap: '8px',
     marginBottom: '6px'
   },
-  username: { fontSize: '14px', fontWeight: '700', color: '#2D3748' },
+  username: { fontSize: '14px', fontWeight: '700', color: '#3D2D1E' },
   
-  // Custom Role badge styling matching Discord's layout template
   badge: {
     display: 'flex',
     alignItems: 'center',
@@ -140,12 +288,13 @@ const styles = {
     userSelect: 'none'
   },
 
-  bubble: { padding: '12px 16px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' },
-  textRow: { fontSize: '15px', lineHeight: '1.4', wordBreak: 'break-word' },
+  bubble: { position: 'relative', padding: '12px 16px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.02)', maxWidth: '100%', overflowWrap: 'break-word', wordBreak: 'break-word', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)' },
+  textRow: { fontSize: '15px', lineHeight: '1.4', wordBreak: 'break-word', overflowWrap: 'break-word', width: '100%', paddingRight: '64px' },
   timestamp: { fontSize: '11px', color: '#A0AEC0', marginTop: '6px', marginLeft: '4px', marginRight: '4px' },
 
   thumbnailImage: {
-    maxWidth: '200px', 
+    maxWidth: '100%',
+    width: 'auto',
     maxHeight: '200px',
     borderRadius: '12px',
     cursor: 'pointer',
@@ -181,6 +330,56 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer'
   }
+  ,
+  reactButton: { position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '999px', padding: '6px 8px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', zIndex: 30 },
+  reactionsRow: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' },
+  reactionPill: { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 8px', borderRadius: '999px', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' },
+  emojiQuick: { display: 'flex', gap: '6px', marginLeft: '6px' },
+  emojiBtn: { background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '16px', padding: '4px' }
+  ,
+  reactIcon: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    width: '34px',
+    height: '34px',
+    borderRadius: '50%',
+    background: '#FFFFFF',
+    border: '1px solid #E6E0D8',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
+    zIndex: 50,
+    fontSize: '14px',
+    padding: 0
+  },
+  pickerToggle: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '16px',
+    padding: '6px'
+  },
+  pickerPopup: {
+    position: 'absolute',
+    top: '-46px',
+    background: '#FFFFFF',
+    border: '1px solid #E6E0D8',
+    borderRadius: '22px',
+    padding: '6px 8px',
+    display: 'flex',
+    gap: '8px',
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+    zIndex: 40,
+    width: '220px',
+    boxSizing: 'border-box',
+    overflow: 'hidden'
+  },
+  pickerEmoji: { background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', padding: 0, width: '34px', height: '34px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }
 };
 
 export default Message;

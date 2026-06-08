@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentUser, customWidth }) {
+function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentUser, customWidth, isOpen = true, onClose, isPhone = false }) {
   // Static list of public channels
   const channels = [
     { id: 'general', name: 'Algemeen' },
@@ -28,8 +28,20 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
     return `${prefix}${lastMsg.text}`;
   };
 
+  // Always render the sidebar so we can animate open/close on phones.
+  const containerBase = isPhone ? { ...styles.sidebar, ...styles.mobileOverlay, width: `${Math.min(customWidth, 320)}px` } : { ...styles.sidebar, width: `${customWidth}px` };
+
+  const containerStyle = {
+    ...containerBase,
+    transition: 'transform 260ms ease, opacity 180ms ease',
+    transform: isPhone ? (isOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
+    opacity: isPhone ? (isOpen ? 1 : 0) : 1
+  };
+
   return (
-    <div style={{ ...styles.sidebar, width: `${customWidth}px` }}>
+    <>
+      {isPhone && isOpen && <div style={{ ...styles.backdrop, backgroundColor: 'transparent' }} onClick={onClose} />}
+      <div style={containerStyle}>
       {/* Sidebar Header */}
       <div style={styles.header}>
         <h2 style={styles.title}>Berichten</h2>
@@ -47,7 +59,7 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
               onClick={() => onChannelChange(ch.id)}
               style={{
                 ...styles.item,
-                backgroundColor: isActive ? '#F1F5F9' : 'transparent',
+                backgroundColor: isActive ? '#FFEBD7' : 'transparent',
                 borderLeft: isActive ? '4px solid #FF7817' : '4px solid transparent'
               }}
             >
@@ -70,7 +82,7 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
           const isActive = currentChannel === privateRoomId;
 
           // Determine avatar source (use uploaded avatar when available)
-          const avatarSrc = u.avatar && u.avatar !== 'undefined' ? u.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=random&color=fff`;
+          const avatarSrc = u.avatar && u.avatar !== 'undefined' ? u.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=random&color=FFEBD7`;
 
           // Map exact role titles from Auth.js to colors
           const ROLE_DIABEET = '🩸 Ik ben iemand met diabetes';
@@ -88,7 +100,7 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
               onClick={() => onChannelChange(u.username)}
               style={{
                 ...styles.item,
-                backgroundColor: isActive ? '#F1F5F9' : 'transparent',
+                backgroundColor: isActive ? '#FFEBD7' : 'transparent',
                 borderLeft: isActive ? '4px solid #FF7817' : '4px solid transparent'
               }}
             >
@@ -106,19 +118,34 @@ function Sidebar({ currentChannel, onChannelChange, allMessages, users, currentU
         })}
       </div>
     </div>
+    </>
   );
 }
 
 const styles = {
   sidebar: {
-    background: '#FDFDFE',
-    borderRight: '1px solid #E2E8F0',
+    background: '#FFEBD7',
+    borderRight: '1px solid #AE9881',
     display: 'flex',
     flexDirection: 'column',
     padding: '20px 0',
     overflowY: 'auto',
     height: 'auto', // Takes full height of parent appContainer
     flexShrink: 0 
+  },
+  mobileOverlay: {
+    position: 'fixed',
+    top: '70px',
+    left: 0,
+    height: 'calc(100vh - 70px)',
+    zIndex: 1500,
+    boxShadow: '0 10px 30px rgba(0,0,0,0.12)'
+  },
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    zIndex: 1400
   },
   header: {
     display: 'flex',
@@ -127,15 +154,15 @@ const styles = {
     padding: '0 20px',
     marginBottom: '20px'
   },
-  title: { fontSize: '22px', fontWeight: '800', color: '#1A202C', margin: 0 },
+  title: { fontSize: '22px', fontWeight: '800', color: '#3D2D1E', margin: 0 },
   addBtn: {
-    width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #E2E8F0',
-    background: 'white', color: '#1A202C', fontSize: '18px', cursor: 'pointer',
+    width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #AE9881',
+    background: '#FFEBD7', color: '#3D2D1E', fontSize: '18px', cursor: 'pointer',
     display: 'flex', justifyContent: 'center', alignItems: 'center'
   },
   section: { marginBottom: '20px' },
   sectionLabel: { 
-    fontSize: '11px', fontWeight: '700', color: '#94A3B8', 
+    fontSize: '11px', fontWeight: '700', color: '#AE9881', 
     letterSpacing: '1px', padding: '0 25px', marginBottom: '10px' 
   },
   item: {
@@ -144,17 +171,17 @@ const styles = {
     overflow: 'hidden' 
   },
   hashIcon: {
-    width: '36px', height: '36px', borderRadius: '8px', background: '#F1F5F9',
+    width: '36px', height: '36px', borderRadius: '8px', background: '#AE9881',
     display: 'flex', justifyContent: 'center', alignItems: 'center',
-    marginRight: '12px', color: '#64748B', fontWeight: 'bold', fontSize: '18px',
+    marginRight: '12px', color: '#3D2D1E', fontWeight: 'bold', fontSize: '18px',
     flexShrink: 0 
   },
   userAvatar: {
     width: '36px', height: '36px', borderRadius: '50%', marginRight: '12px', 
-    objectFit: 'cover', flexShrink: 0 
+    objectFit: 'cover', flexShrink: 0, boxSizing: 'border-box'
   },
   itemInfo: { flex: 1, overflow: 'hidden' },
-  itemName: { fontSize: '14px', fontWeight: '700', color: '#1A202C' },
+  itemName: { fontSize: '14px', fontWeight: '700', color: '#3D2D1E' },
   itemDesc: { 
     fontSize: '12px', color: '#94A3B8', marginTop: '2px', 
     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' 

@@ -36,3 +36,22 @@
     transform: rotate(360deg);
   }
 }
+
+/* Mobile: show only the send icon, hide the label */
+@media (max-width: 480px) {
+  .sendButton .sendText {
+    display: none;
+  }
+
+  .sendButton {
+    padding: 8px !important;
+    border-radius: 10px !important;
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+}

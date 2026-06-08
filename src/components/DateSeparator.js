@@ -20,11 +20,11 @@ const styles = {
   separatorLine: {
     flex: 1,
     height: '1px',
-    background: '#E2E8F0', // The soft blue/grey line from your image
+    background: '#3D2D1E', // The soft blue/grey line from your image
   },
   separatorText: {
     padding: '0 15px',
-    color: '#94A3B8', // Muted text color
+    color: '#3D2D1E', // Muted text color
     fontSize: '12px',
     fontWeight: 'bold',
     letterSpacing: '0.8px',

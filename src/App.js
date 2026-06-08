@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './App.css';
 import io from 'socket.io-client';
 import Auth from './components/Auth';
 import Message from './components/Message';
@@ -25,8 +26,12 @@ function App() {
   const [currentChannel, setCurrentChannel] = useState('general');
   const [user, setUser] = useState(localStorage.getItem('diameet_user') || null);
   const [usersList, setUsersList] = useState([]);
+  const [friendsList, setFriendsList] = useState([]);
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
+  // Dedicated phone breakpoint (for iPhone / small devices)
+  const [isPhone, setIsPhone] = useState(typeof window !== 'undefined' ? window.innerWidth <= 480 : false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const pickerRef = useRef(null); 
@@ -38,6 +43,17 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Ensure chat is scrolled to the latest message when messages or channel change
+  useEffect(() => {
+    // Use a short timeout to allow the DOM to render grouped messages first
+    const t = setTimeout(() => {
+      if (messagesEndRef.current) {
+        try { messagesEndRef.current.scrollIntoView({ behavior: 'auto' }); } catch (e) { /* ignore */ }
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [messages, currentChannel]);
+
   const generateId = () => Date.now() + Math.random().toString(36).substr(2, 9);
 
   // Helper fallback generator: Creates the monogram letter-avatar from before
@@ -45,6 +61,8 @@ function App() {
     const nameStr = username ? username.toString() : '??';
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(nameStr)}&background=random&color=fff`;
   };
+
+  // document title is set by public/index.html; no dynamic profile-based title
 
   const handleLogout = () => {
     localStorage.clear();
@@ -112,11 +130,15 @@ function App() {
   };
 
   useEffect(() => {
+    const handleResize = () => setIsPhone(window.innerWidth <= 480);
     window.addEventListener("mousemove", resize);
     window.addEventListener("mouseup", stopResizing);
+    window.addEventListener('resize', handleResize);
+    handleResize();
     return () => {
       window.removeEventListener("mousemove", resize);
       window.removeEventListener("mouseup", stopResizing);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isResizing]);
 
@@ -129,6 +151,21 @@ function App() {
       .then(res => res.json())
       .then(data => setUsersList(data.filter(u => u.username !== user)))
       .catch(err => console.error("Error fetching users:", err));
+  }, [user]);
+
+  // Fetch friends list to filter direct messages
+  useEffect(() => {
+    if (!user) return;
+
+    const token = localStorage.getItem('diameet_token');
+    fetch(`${API_BASE_URL}/api/friends/list`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => setFriendsList(data || []))
+      .catch(err => console.error("Error fetching friends list:", err));
   }, [user]);
 
   // Persistent Socket Event Listeners Hook
@@ -144,9 +181,30 @@ function App() {
       setMessages(Array.isArray(history) ? history : []);
     };
 
+    const onReaction = (data) => {
+      // data: { messageId, emoji, user, channel }
+      setMessages((prev) => prev.map(m => {
+        if (m.id !== data.messageId) return m;
+        const reactions = m.reactions ? { ...m.reactions } : {};
+        const users = reactions[data.emoji] ? [...reactions[data.emoji]] : [];
+        const has = users.includes(data.user);
+        if (has) {
+          // remove
+          const filtered = users.filter(u => u !== data.user);
+          if (filtered.length) reactions[data.emoji] = filtered;
+          else delete reactions[data.emoji];
+        } else {
+          users.push(data.user);
+          reactions[data.emoji] = users;
+        }
+        return { ...m, reactions };
+      }));
+    };
+
     // Register active real-time listeners immediately
     socket.on('chat-message', onChatMessage);
     socket.on('load-history', onLoadHistory);
+    socket.on('reaction', onReaction);
     socket.on('channel-cleared-perm', () => setMessages([]));
 
     // Tell the backend to join the channel room
@@ -155,9 +213,28 @@ function App() {
     return () => {
       socket.off('chat-message', onChatMessage);
       socket.off('load-history', onLoadHistory);
+      socket.off('reaction', onReaction);
       socket.off('channel-cleared-perm');
     };
   }, [user, currentChannel]); // Fires cleanly whenever you toggle rooms or reload the site
+
+  // Toggle reaction on a message and broadcast via socket
+  const toggleReaction = (messageId, emoji) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const reactions = m.reactions ? { ...m.reactions } : {};
+      const users = reactions[emoji] ? [...reactions[emoji]] : [];
+      const has = users.includes(user);
+      let newUsers;
+      if (has) newUsers = users.filter(u => u !== user);
+      else newUsers = [...users, user];
+      if (newUsers.length) reactions[emoji] = newUsers;
+      else delete reactions[emoji];
+      return { ...m, reactions };
+    }));
+
+    socket.emit('reaction', { messageId, emoji, user, channel: currentChannel });
+  };
 
   // --- 5. MESSAGE SENDING ---
   const sendMessage = () => {
@@ -224,7 +301,8 @@ function App() {
       id: current.id, 
       text: current.text || null, 
       image: current.image || null, 
-      timestamp: currentTs 
+      timestamp: currentTs,
+      reactions: current.reactions || {} 
     };
     
     // Explicit Fallback Check: If database records lack pfp data, parse the letter monogram avatar
@@ -260,6 +338,8 @@ function App() {
         user={user} 
         onLogout={handleLogout} 
         onDeleteAccount={handleDeleteAccount} 
+        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        isPhone={isPhone}
       />
 
       <div style={styles.appContainer}>
@@ -272,11 +352,16 @@ function App() {
             } else {
               setCurrentChannel(target);
             }
+            // close sidebar on phone after navigation
+            if (isPhone) setIsSidebarOpen(false);
           }} 
           allMessages={messages}
-          users={usersList}
+          users={usersList.filter(u => friendsList.some(f => f.username === u.username))}
           currentUser={user}
-          customWidth={sidebarWidth} 
+          customWidth={sidebarWidth}
+          isOpen={isPhone ? isSidebarOpen : true}
+          isPhone={isPhone}
+          onClose={() => setIsSidebarOpen(false)}
         />
 
         <div style={{...styles.resizer, backgroundColor: isResizing ? '#FF7817' : 'transparent'}} onMouseDown={startResizing} />
@@ -290,7 +375,10 @@ function App() {
             </h3>
           </div>
 
-          <div style={styles.messageList}>
+          <div style={{
+            ...styles.messageList,
+            padding: isPhone ? '12px' : styles.messageList.padding
+          }}>
             {groupedMessages.map((group, index) => {
               const dateObj = new Date(group.timestamp);
               const today = new Date().toDateString();
@@ -305,14 +393,16 @@ function App() {
                 <React.Fragment key={index}>
                   {showSeparator && <DateSeparator label={label} />}
                   
-                  <Message 
-                    user={group.user} 
-                    avatar={group.avatar}
-                    role={group.role}
-                    timestamp={dateObj}
-                    texts={group.texts} 
-                    isOwnMessage={group.user === user} 
-                  />
+                        <Message 
+                          user={group.user} 
+                          avatar={group.avatar}
+                          role={group.role}
+                          timestamp={dateObj}
+                          texts={group.texts} 
+                          isOwnMessage={group.user === user}
+                          currentUser={user}
+                          onToggleReaction={toggleReaction}
+                        />
                 </React.Fragment>
               );
             })}
@@ -370,9 +460,9 @@ function App() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={showEmojiPicker ? "#FF7817" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
               </button>
 
-              <button style={styles.sendButton} onClick={sendMessage}>
+              <button className="sendButton" style={styles.sendButton} onClick={sendMessage}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(40deg) translate(-3px, 3px)' }}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                Stuur
+                <span className="sendText">Stuur</span>
               </button>
             </div>
           </div>
@@ -384,24 +474,27 @@ function App() {
 
 // --- 7. STYLES ---
 const styles = {
-  mainWrapper: { display: 'flex', flexDirection: 'column', height: '100dvh', width: '100vw', overflow: 'hidden', background: '#FDFDFE', fontFamily: 'sans-serif' },
+  mainWrapper: { display: 'flex', flexDirection: 'column', minHeight: '100dvh', height: '100dvh', width: '100%', overflowX: 'hidden', overflowY: 'hidden', background: '#FFEBD7', fontFamily: 'sans-serif' },
   appContainer: { display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 },
   chatArea: { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' },
-  chatHeader: { height: '60px', flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid #E2E8F0', background: '#FDFDFE' },
-  channelTitle: { fontSize: '18px', fontWeight: '800', color: '#1A202C' },
-  messageList: { flex: 1, overflowY: 'auto', padding: '20px', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '14px' },
-  resizer: { width: '6px', cursor: 'col-resize', height: '100%', zIndex: 10, borderLeft: '1px solid #E2E8F0', transition: 'background-color 0.2s' },
-  inputBar: { padding: '15px 20px', background: '#FDFDFE', borderTop: '1px solid #E2E8F0', flexShrink: 0, position: 'relative' },
-  emojiPopup: { position: 'absolute', bottom: '80px', right: '20px', background: 'white', padding: '15px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 1000, border: '1px solid #E2E8F0', width: '250px' },
-  plusPopup: { position: 'absolute', bottom: '50px', left: '0', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #E2E8F0', padding: '8px', zIndex: 1001, width: '200px' },
+  chatHeader: { height: '60px', flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid #AE9881', background: '#FFEBD7' },
+  channelTitle: { fontSize: '18px', fontWeight: '800', color: '#3D2D1E' },
+  messageList: { flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px', paddingBottom: '96px', minHeight: 0, display: 'flex', flexDirection: 'column', gap: '14px' },
+  resizer: { width: '6px', cursor: 'col-resize', height: '100%', zIndex: 10, borderLeft: '1px solid #AE9881', transition: 'background-color 0.2s' },
+  inputBar: { padding: '12px 16px', background: '#FFEBD7', borderTop: '1px solid #AE9881', flexShrink: 0, position: 'sticky', bottom: 0, zIndex: 60, boxSizing: 'border-box' },
+  emojiPopup: { position: 'absolute', bottom: '80px', right: '20px', background: 'white', padding: '15px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 1000, border: '1px solid #AE9881', width: '250px' },
+  plusPopup: { position: 'absolute', bottom: '50px', left: '0', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #AE9881', padding: '8px', zIndex: 1001, width: '200px' },
   plusItem: { padding: '10px 12px', fontSize: '14px', color: '#4A5568', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'background 0.2s', '&:hover': { background: '#F8FAFC' } },
-  emojiLabel: { fontSize: '11px', color: '#94A3B8', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' },
+  emojiLabel: { fontSize: '11px', color: '#E3D2C0', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' },
   emojiGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' },
   emojiItem: { fontSize: '24px', cursor: 'pointer', textAlign: 'center' },
-  inputContainer: { display: 'flex', alignItems: 'center', background: '#F1F5F9', padding: '6px 10px', borderRadius: '15px', border: '1px solid #E2E8F0' },
+  inputContainer: { display: 'flex', alignItems: 'center', background: '#FFEBD7', padding: '6px 10px', borderRadius: '15px', border: '1px solid #AE9881' },
   inputField: { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '16px', padding: '10px 12px', color: '#4A5568' },
-  iconButton: { background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '0 8px', display: 'flex', alignItems: 'center' },
-  sendButton: { display: 'flex', alignItems: 'center', gap: '8px', background: '#FF7817', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', marginLeft: '5px' }
+  iconButton: { background: 'transparent', border: 'none', color: '#E3D2C0', cursor: 'pointer', padding: '0 8px', display: 'flex', alignItems: 'center' },
+  inputContainer: { display: 'flex', alignItems: 'center', background: '#FFEBD7', padding: '6px 10px', borderRadius: '15px', border: '1px solid #AE9881', width: '100%', boxSizing: 'border-box', minWidth: 0 },
+  inputField: { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '16px', padding: '10px 12px', color: '#4A5568', minWidth: 0, maxWidth: '100%' },
+  iconButton: { background: 'transparent', border: 'none', color: '#E3D2C0', cursor: 'pointer', padding: '0 8px', display: 'flex', alignItems: 'center', flexShrink: 0 },
+  sendButton: { display: 'flex', alignItems: 'center', gap: '8px', background: '#FF7817', color: 'white', border: 'none', borderRadius: '10px', padding: '8px 16px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', marginLeft: '6px', flexShrink: 0 }
 };
 
 export default App;
