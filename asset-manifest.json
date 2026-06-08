@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/Diameet-Frontend/static/css/main.e6c13ad2.css",
-    "main.js": "/Diameet-Frontend/static/js/main.04944e67.js",
+    "main.js": "/Diameet-Frontend/static/js/main.cd36aa5a.js",
     "static/js/453.9cbbe0e8.chunk.js": "/Diameet-Frontend/static/js/453.9cbbe0e8.chunk.js",
     "index.html": "/Diameet-Frontend/index.html",
     "main.e6c13ad2.css.map": "/Diameet-Frontend/static/css/main.e6c13ad2.css.map",
-    "main.04944e67.js.map": "/Diameet-Frontend/static/js/main.04944e67.js.map",
+    "main.cd36aa5a.js.map": "/Diameet-Frontend/static/js/main.cd36aa5a.js.map",
     "453.9cbbe0e8.chunk.js.map": "/Diameet-Frontend/static/js/453.9cbbe0e8.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.04944e67.js"
+    "static/js/main.cd36aa5a.js"
   ]
 }
